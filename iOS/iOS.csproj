@@ -8,9 +8,9 @@
     <ProjectGuid>{DE22BDD6-E154-4B97-B2ED-621F95A5B9AE}</ProjectGuid>
     <ProjectTypeGuids>{FEACFBD2-3405-455C-9665-78FE426C6842};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
-    <RootNamespace>iOS</RootNamespace>
+    <RootNamespace>Zebble.Plugin</RootNamespace>
     <IPhoneResourcePrefix>Resources</IPhoneResourcePrefix>
-    <AssemblyName>VideoPlayer.iOS</AssemblyName>
+    <AssemblyName>Zebble.VideoPlayer.iOS</AssemblyName>
     <OutputPath>..\lib\</OutputPath>
     <DefineConstants>__UNIFIED__;__MOBILE__;__IOS__;IOS;</DefineConstants>
   </PropertyGroup>

@@ -10,8 +10,8 @@
     <ProjectGuid>{AEFF27A1-7FF0-4803-8AFC-BDEE2A526F17}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>UWP</RootNamespace>
-    <AssemblyName>VideoPlayer.UWP</AssemblyName>
+    <RootNamespace>Zebble.Plugin</RootNamespace>
+    <AssemblyName>Zebble.VideoPlayer.UWP</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <MinimumVisualStudioVersion>14</MinimumVisualStudioVersion>
     <FileAlignment>512</FileAlignment>
