@@ -2,25 +2,23 @@ namespace Zebble.Plugin.Renderer
 {
     using System.ComponentModel;
     using System.Threading.Tasks;
+    using Android.Views;
 
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public class VideoPlayerRenderer : ICustomRenderer
+    public class VideoPlayerRenderer : INativeRenderer
     {
-        VideoPlayer View;
         AndroidVideo Result;
 
-        public Task<Android.Views.View> Render(object view)
+        public Task<View> Render(Zebble.Renderer renderer)
         {
-            View = (VideoPlayer)view;
-            Result = new AndroidVideo(View);
-            return Task.FromResult((Android.Views.View)Result);
+            Result = new AndroidVideo((VideoPlayer)renderer.View);
+            return Task.FromResult<View>(Result);
         }
 
         public void Dispose()
         {
             Result?.Dispose();
             Result = null;
-            View = null;
         }
     }
 }

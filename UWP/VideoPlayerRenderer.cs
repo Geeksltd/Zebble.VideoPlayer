@@ -5,21 +5,15 @@ namespace Zebble.Plugin.Renderer
     using Windows.UI.Xaml;
 
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public class VideoPlayerRenderer : ICustomRenderer
+    public class VideoPlayerRenderer : INativeRenderer
     {
-        VideoPlayer View;
         FrameworkElement Result;
 
-        public async Task<FrameworkElement> Render(object view)
+        public async Task<FrameworkElement> Render(Zebble.Renderer renderer)
         {
-            View = (VideoPlayer)view;
-            return Result = await new UWPVideoViewer(View).Render();
+            return Result = await new UWPVideoViewer((VideoPlayer)renderer.View).Render();
         }
 
-        public void Dispose()
-        {
-            View = null;
-            Result = null;
-        }
+        public void Dispose() => Result = null;
     }
 }

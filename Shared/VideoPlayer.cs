@@ -2,7 +2,7 @@
 {
     using Zebble;
 
-    public partial class VideoPlayer : CustomRenderedView<Renderer.VideoPlayerRenderer>
+    public partial class VideoPlayer : View,  IRenderedBy<Renderer.VideoPlayerRenderer>
     {
         string path;
         public readonly AsyncEvent PathChanged = new AsyncEvent();
