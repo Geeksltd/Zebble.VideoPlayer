@@ -61,7 +61,7 @@
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Xml" />
     <Reference Include="Zebble.Android, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Zebble.4.0.239\lib\MonoAndroid10\Zebble.Android.dll</HintPath>
+      <HintPath>..\packages\Zebble.4.0.245\lib\MonoAndroid10\Zebble.Android.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
