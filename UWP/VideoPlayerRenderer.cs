@@ -1,15 +1,14 @@
-namespace Zebble.Plugin.Renderer
+namespace Zebble
 {
     using System.ComponentModel;
     using System.Threading.Tasks;
     using Windows.UI.Xaml;
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public class VideoPlayerRenderer : INativeRenderer
+    class VideoPlayerRenderer : INativeRenderer
     {
         FrameworkElement Result;
 
-        public async Task<FrameworkElement> Render(Zebble.Renderer renderer)
+        public async Task<FrameworkElement> Render(Renderer renderer)
         {
             return Result = await new UWPVideoViewer((VideoPlayer)renderer.View).Render();
         }

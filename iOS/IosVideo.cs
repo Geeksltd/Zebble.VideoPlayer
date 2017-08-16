@@ -1,11 +1,11 @@
-namespace Zebble.Plugin.Renderer
+namespace Zebble
 {
     using System;
     using AVFoundation;
     using Foundation;
     using UIKit;
 
-    public class IosVideo : UIView
+    class IosVideo : UIView
     {
         VideoPlayer View;
         AVAsset Asset;

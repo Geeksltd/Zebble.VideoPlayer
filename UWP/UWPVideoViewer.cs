@@ -1,4 +1,4 @@
-namespace Zebble.Plugin.Renderer
+namespace Zebble
 {
     using System;
     using System.IO;
@@ -7,7 +7,7 @@ namespace Zebble.Plugin.Renderer
     using controls = Windows.UI.Xaml.Controls;
     using media = Windows.UI.Xaml.Media;
 
-    public class UWPVideoViewer
+     class UWPVideoViewer
     {
         controls.MediaElement Result;
         VideoPlayer View;

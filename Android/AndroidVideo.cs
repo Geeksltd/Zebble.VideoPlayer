@@ -1,9 +1,9 @@
-namespace Zebble.Plugin.Renderer
+namespace Zebble
 {
     using System;
     using Android.Widget;
 
-    public class AndroidVideo : VideoView
+    class AndroidVideo : VideoView
     {
         VideoPlayer View;
         MediaController MediaController;

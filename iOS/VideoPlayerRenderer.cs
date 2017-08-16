@@ -1,16 +1,13 @@
-namespace Zebble.Plugin.Renderer
+namespace Zebble
 {
-    using System;
-    using System.ComponentModel;
     using System.Threading.Tasks;
     using UIKit;
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public class VideoPlayerRenderer : INativeRenderer
+    class VideoPlayerRenderer : INativeRenderer
     {
         UIView Result;
 
-        public Task<UIView> Render(Zebble.Renderer renderer)
+        public Task<UIView> Render(Renderer renderer)
         {
             Result = new IosVideo((VideoPlayer)renderer.View);
             return Task.FromResult(Result);

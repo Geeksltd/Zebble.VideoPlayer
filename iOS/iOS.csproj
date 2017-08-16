@@ -7,7 +7,7 @@
     <ProjectGuid>{DE22BDD6-E154-4B97-B2ED-621F95A5B9AE}</ProjectGuid>
     <ProjectTypeGuids>{FEACFBD2-3405-455C-9665-78FE426C6842};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
-    <RootNamespace>Zebble.Plugin</RootNamespace>
+    <RootNamespace>Zebble</RootNamespace>
     <IPhoneResourcePrefix>Resources</IPhoneResourcePrefix>
     <AssemblyName>Zebble.VideoPlayer.iOS</AssemblyName>
     <OutputPath>..\lib\</OutputPath>
@@ -37,7 +37,7 @@
     <Reference Include="System.Core" />
     <Reference Include="Xamarin.iOS" />
     <Reference Include="Zebble.iOS, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Zebble.4.1.289\lib\Xamarin.iOS10\Zebble.iOS.dll</HintPath>
+      <HintPath>..\packages\Zebble.4.1.290\lib\Xamarin.iOS10\Zebble.iOS.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>

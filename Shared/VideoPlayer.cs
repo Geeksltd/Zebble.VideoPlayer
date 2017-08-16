@@ -1,8 +1,6 @@
-﻿namespace Zebble.Plugin
+﻿namespace Zebble
 {
-    using Zebble;
-
-    public partial class VideoPlayer : View,  IRenderedBy<Renderer.VideoPlayerRenderer>
+    public partial class VideoPlayer : View, IRenderedBy<VideoPlayerRenderer>
     {
         string path;
         public readonly AsyncEvent PathChanged = new AsyncEvent();
