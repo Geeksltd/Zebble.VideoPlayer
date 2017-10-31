@@ -7,9 +7,9 @@
     <description>Native video player plugin for Zebble.</description>
     <projectUrl>https://github.com/Geeksltd/Zebble.VideoPlayer</projectUrl>
     <iconUrl>https://raw.githubusercontent.com/Geeksltd/Zebble.VideoPlayer/master/Shared/Icon.png</iconUrl>
-    <authors>Mobile App Technologies Ltd</authors>
-    <owners>Mobile App Technologies Ltd</owners>
-    <copyright>Copyright ©2017 | Mobile App Technologies Ltd</copyright>
+    <authors>Geeks Ltd</authors>
+    <owners>Geeks Ltd</owners>
+    <copyright>Copyright ©2017 | Geeks Ltd</copyright>
   </metadata>
   <files>
     <file src="..\..\lib\Zebble.VideoPlayer.iOS.*" target="lib\Xamarin.iOS10\" />
