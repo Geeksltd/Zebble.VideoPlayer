@@ -7,7 +7,7 @@ namespace Zebble
     using controls = Windows.UI.Xaml.Controls;
     using media = Windows.UI.Xaml.Media;
 
-     class UWPVideoViewer
+    class UWPVideoViewer
     {
         controls.MediaElement Result;
         VideoPlayer View;
@@ -15,7 +15,7 @@ namespace Zebble
         public UWPVideoViewer(VideoPlayer view)
         {
             View = view;
-            View.PathChanged.HandleOn(Device.UIThread, LoadVideo);
+            View.PathChanged.HandleOn(Thread.UI, LoadVideo);
 
             Result = new controls.MediaElement { Stretch = media.Stretch.UniformToFill };
         }
