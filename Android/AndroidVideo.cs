@@ -1,6 +1,7 @@
 namespace Zebble
 {
     using System;
+    using Android.Media;
     using Android.Widget;
 
     class AndroidVideo : VideoView
@@ -25,6 +26,8 @@ namespace Zebble
             if (path.IsUrl()) SetVideoURI(Android.Net.Uri.Parse(path));
             else SetVideoPath(Device.IO.AbsolutePath(path));
 
+            SetOnPreparedListener(new MediaPlayerDelegate { Loop = View.Loop });
+
             Start();
             SetZOrderOnTop(onTop: true);
         }
@@ -41,6 +44,15 @@ namespace Zebble
             }
 
             base.Dispose(disposing);
+        }
+    }
+
+    public class MediaPlayerDelegate : Java.Lang.Object, MediaPlayer.IOnPreparedListener
+    {
+        public bool Loop;
+        public void OnPrepared(MediaPlayer mp)
+        {
+            mp.Looping = Loop;
         }
     }
 }

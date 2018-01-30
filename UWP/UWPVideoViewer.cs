@@ -61,6 +61,7 @@ namespace Zebble
             }
 
             Result.AutoPlay = View.AutoPlay;
+            Result.IsLooping = View.Loop;
         }
     }
 }

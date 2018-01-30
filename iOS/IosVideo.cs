@@ -14,6 +14,10 @@ namespace Zebble
         AVPlayer Player;
         AVPlayerLayer PlayerLayer;
 
+        AVPlayerLooper PlayerLooper;
+        AVQueuePlayer QueuePlayer;
+
+
         public IosVideo(VideoPlayer view)
         {
             View = view;
@@ -40,17 +44,32 @@ namespace Zebble
                 PlayerItem = new AVPlayerItem(Asset);
             }
 
-            Player = new AVPlayer(PlayerItem);
-            PlayerLayer = AVPlayerLayer.FromPlayer(Player);
+            if (View.Loop)
+            {
+                QueuePlayer = new AVQueuePlayer();
+                PlayerLayer = AVPlayerLayer.FromPlayer(QueuePlayer);
+                PlayerLooper = new AVPlayerLooper(QueuePlayer, PlayerItem, CoreMedia.CMTimeRange.InvalidRange);
+            }
+            else
+            {
+                Player = new AVPlayer(PlayerItem);
+                PlayerLayer = AVPlayerLayer.FromPlayer(Player);
+            }
 
             PlayerLayer.VideoGravity = AVLayerVideoGravity.ResizeAspectFill;
-            PlayerLayer.Frame = this.Bounds;
+            PlayerLayer.Frame = Bounds;
 
             Layer.AddSublayer(PlayerLayer);
 
             UIGraphics.EndImageContext();
 
-            if (View.AutoPlay) Player.Play();
+            if (View.AutoPlay)
+            {
+                if (View.Loop)
+                    QueuePlayer.Play();
+                else
+                    Player.Play();
+            }
         }
 
         protected override void Dispose(bool disposing)
@@ -69,6 +88,14 @@ namespace Zebble
                 Player?.Pause();
                 Player?.Dispose();
                 Player = null;
+
+                QueuePlayer?.Pause();
+                QueuePlayer?.Dispose();
+                QueuePlayer = null;
+
+                PlayerLooper?.DisableLooping();
+                PlayerLooper?.Dispose();
+                PlayerLooper = null;
 
                 PlayerLayer?.Dispose();
                 PlayerLayer = null;

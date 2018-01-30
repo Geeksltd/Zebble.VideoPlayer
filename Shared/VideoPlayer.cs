@@ -13,6 +13,8 @@
 
         public bool AutoPlay { get; set; }
 
+        public bool Loop { get; set; }
+
         public override void Dispose()
         {
             PathChanged?.Dispose();
