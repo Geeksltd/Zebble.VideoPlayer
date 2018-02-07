@@ -15,6 +15,8 @@
 
         public bool Loop { get; set; }
 
+        public bool ShowControlds { get; set; }
+
         public override void Dispose()
         {
             PathChanged?.Dispose();
