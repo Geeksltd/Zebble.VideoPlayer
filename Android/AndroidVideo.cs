@@ -21,7 +21,8 @@ namespace Zebble
 
             MediaController = new MediaController(UIRuntime.CurrentActivity);
             MediaController.SetAnchorView(this);
-            if (View.ShowControlds)
+
+            if (View.ShowControls)
                 SetMediaController(MediaController);
 
             if (path.IsUrl()) SetVideoURI(Android.Net.Uri.Parse(path));

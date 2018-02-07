@@ -15,7 +15,7 @@
 
         public bool Loop { get; set; }
 
-        public bool ShowControlds { get; set; }
+        public bool ShowControls { get; set; }
 
         public override void Dispose()
         {
