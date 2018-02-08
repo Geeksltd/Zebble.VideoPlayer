@@ -12,6 +12,12 @@ namespace Zebble
         public AndroidVideo(VideoPlayer view) : base(UIRuntime.CurrentActivity)
         {
             View = view;
+
+            View.PathChanged.HandleOn(Thread.UI, () => LoadVideo());
+            View.Played.HandleOn(Thread.UI, () => Start());
+            View.Paused.HandleOn(Thread.UI, () => Pause());
+            View.Stopped.HandleOn(Thread.UI, () => StopPlayback());
+
             LoadVideo();
         }
 

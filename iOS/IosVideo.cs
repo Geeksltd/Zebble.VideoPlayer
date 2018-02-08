@@ -21,7 +21,37 @@ namespace Zebble
         public IosVideo(VideoPlayer view)
         {
             View = view;
+
+            View.PathChanged.HandleOn(Thread.UI, () => LoadVideo());
+            View.Played.HandleOn(Thread.UI, () => Play());
+            View.Paused.HandleOn(Thread.UI, () => Pause());
+            View.Stopped.HandleOn(Thread.UI, () => Stop());
+
             LoadVideo();
+        }
+
+        void Play()
+        {
+            if (View.Loop)
+                QueuePlayer?.Play();
+            else
+                Player?.Play();
+        }
+
+        void Pause()
+        {
+            if (View.Loop)
+                QueuePlayer?.Pause();
+            else
+                Player?.Pause();
+        }
+
+        void Stop()
+        {
+            if (View.Loop)
+                QueuePlayer?.Pause();
+            else
+                Player?.Pause();
         }
 
         void LoadVideo()
