@@ -1,4 +1,4 @@
-[logo]: https://raw.githubusercontent.com/Geeksltd/Zebble.VideoPlayer/master/Shared/NuGet/Icon.png "Zebble.VideoPlayer"
+[logo]: https://raw.githubusercontent.com/Geeksltd/Zebble.VideoPlayer/master/Shared/Icon.png "Zebble.VideoPlayer"
 
 
 ## Zebble.VideoPlayer
