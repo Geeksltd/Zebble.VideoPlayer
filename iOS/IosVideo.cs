@@ -23,8 +23,9 @@ namespace Zebble
             View = view;
 
             View.PathChanged.HandleOn(Thread.UI, () => LoadVideo());
-            View.Played.HandleOn(Thread.UI, () => Play());
+            View.Started.HandleOn(Thread.UI, () => Play());
             View.Paused.HandleOn(Thread.UI, () => Pause());
+            View.Resumed.HandleOn(Thread.UI, () => Play());
             View.Stopped.HandleOn(Thread.UI, () => Stop());
 
             LoadVideo();

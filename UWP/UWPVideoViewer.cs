@@ -16,8 +16,9 @@ namespace Zebble
         {
             View = view;
             View.PathChanged.HandleOn(Thread.UI, LoadVideo);
-            View.Played.HandleOn(Thread.UI, () => Result.Play());
+            View.Started.HandleOn(Thread.UI, () => Result.Play());
             View.Paused.HandleOn(Thread.UI, () => Result.Pause());
+            View.Resumed.HandleOn(Thread.UI, () => Result.Play());
             View.Stopped.HandleOn(Thread.UI, () => Result.Stop());
 
             Result = new controls.MediaElement { Stretch = media.Stretch.UniformToFill };

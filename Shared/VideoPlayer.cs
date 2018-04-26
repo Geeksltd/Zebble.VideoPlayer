@@ -4,8 +4,9 @@
     {
         string path;
         public readonly AsyncEvent PathChanged = new AsyncEvent();
-        public readonly AsyncEvent Played = new AsyncEvent();
+        public readonly AsyncEvent Started = new AsyncEvent();
         public readonly AsyncEvent Paused = new AsyncEvent();
+        public readonly AsyncEvent Resumed = new AsyncEvent();
         public readonly AsyncEvent Stopped = new AsyncEvent();
 
         public string Path
@@ -25,9 +26,11 @@
 
         public bool ShowControls { get; set; }
 
-        public void Play() => Played.Raise();
+        public void Start() => Started.Raise();
 
         public void Pause() => Paused.Raise();
+
+        public void Resume() => Resumed.Raise();
 
         public void Stop() => Stopped.Raise();
 
