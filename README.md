@@ -71,13 +71,15 @@ https://developer.xamarin.com/guides/ios/platform_features/introduction_to_ios9/
 | Event             | Type                                          | Android | iOS | Windows |
 | :-----------      | :-----------                                  | :------ | :-- | :------ |
 | PathChanged             | AsyncEvent    | x       | x   | x       |
-| Played              | AsyncEvent    | x       | x   | x       |
+| Started              | AsyncEvent    | x       | x   | x       |
+| Resumed              | AsyncEvent    | x       | x   | x       |
 | Paused              | AsyncEvent    | x       | x   | x       |
 | Stopped              | AsyncEvent    | x       | x   | x       |
 
 ### Methods
 | Method       | Return Type  | Parameters                          | Android | iOS | Windows |
 | :----------- | :----------- | :-----------                        | :------ | :-- | :------ |
-| Play         | Void| -| x       | x   | x       |
+| Start         | Void| -| x       | x   | x       |
 | Pause         | Void| -| x       | x   | x       |
+| Resume         | Void| -| x       | x   | x       |
 | Stop         | Void| -| x       | x   | x       |
