@@ -3,6 +3,7 @@ namespace Zebble
     using System;
     using Android.Media;
     using Android.Widget;
+    using Android.Views;
 
     class AndroidVideo : VideoView
     {
@@ -39,6 +40,22 @@ namespace Zebble
 
             Start();
             SetZOrderOnTop(onTop: true);
+        }
+
+        public override ViewStates Visibility
+        {
+            get => base.Visibility;
+            set
+            {
+                if (value == ViewStates.Visible)
+                {
+                    LayoutParameters = View.GetFrame();
+                }
+                else if (value == ViewStates.Invisible || value == ViewStates.Gone)
+                {
+                    LayoutParameters = new FrameLayout.LayoutParams(0, 0);
+                }
+            }
         }
 
         protected override void Dispose(bool disposing)
