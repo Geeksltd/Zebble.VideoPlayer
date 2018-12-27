@@ -4,23 +4,36 @@ namespace Zebble
     using Android.Media;
     using Android.Widget;
     using Android.Views;
+    using Zebble.AndroidOS;
 
-    class AndroidVideo : VideoView
+    class AndroidVideo : RelativeLayout
     {
         VideoPlayer View;
         MediaController MediaController;
+
+        VideoView Video;
 
         public AndroidVideo(VideoPlayer view) : base(UIRuntime.CurrentActivity)
         {
             View = view;
 
+            Video = new VideoView(UIRuntime.CurrentActivity);
+            var @params = new RelativeLayout.LayoutParams(FrameLayout.LayoutParams.FillParent, FrameLayout.LayoutParams.FillParent);
+            @params.AddRule(LayoutRules.AlignParentTop);
+            @params.AddRule(LayoutRules.AlignParentBottom);
+            @params.AddRule(LayoutRules.AlignParentLeft);
+            @params.AddRule(LayoutRules.AlignParentRight);
+            Video.LayoutParameters = @params;
+
             View.PathChanged.HandleOn(Thread.UI, () => LoadVideo());
-            View.Started.HandleOn(Thread.UI, () => Start());
-            View.Paused.HandleOn(Thread.UI, () => Pause());
-            View.Resumed.HandleOn(Thread.UI, () => Resume());
-            View.Stopped.HandleOn(Thread.UI, () => StopPlayback());
+            View.Started.HandleOn(Thread.UI, () => Video.Start());
+            View.Paused.HandleOn(Thread.UI, () => Video.Pause());
+            View.Resumed.HandleOn(Thread.UI, () => Video.Resume());
+            View.Stopped.HandleOn(Thread.UI, () => Video.StopPlayback());
 
             LoadVideo();
+
+            AddView(Video);
         }
 
         void LoadVideo()
@@ -31,15 +44,15 @@ namespace Zebble
             MediaController.SetAnchorView(this);
 
             if (View.ShowControls)
-                SetMediaController(MediaController);
+                Video.SetMediaController(MediaController);
 
-            if (path.IsUrl()) SetVideoURI(Android.Net.Uri.Parse(path));
-            else SetVideoPath(Device.IO.AbsolutePath(path));
+            if (path.IsUrl()) Video.SetVideoURI(Android.Net.Uri.Parse(path));
+            else Video.SetVideoPath(Device.IO.AbsolutePath(path));
 
-            SetOnPreparedListener(new MediaPlayerDelegate { Loop = View.Loop });
+            Video.SetOnPreparedListener(new MediaPlayerDelegate { Loop = View.Loop });
 
-            Start();
-            SetZOrderOnTop(onTop: true);
+            Video.Start();
+            Video.SetZOrderOnTop(onTop: true);
         }
 
         public override ViewStates Visibility
@@ -62,8 +75,8 @@ namespace Zebble
         {
             if (disposing)
             {
-                Pause();
-                StopPlayback();
+                Video.Pause();
+                Video.StopPlayback();
                 MediaController?.Dispose();
                 MediaController = null;
                 View = null;
