@@ -22,6 +22,9 @@ namespace Zebble
         {
             View = view;
 
+            view.Width.Changed.HandleOn(Thread.UI, () => OnFrameChanged());
+            view.Height.Changed.HandleOn(Thread.UI, () => OnFrameChanged());
+
             View.PathChanged.HandleOn(Thread.UI, () => LoadVideo());
             View.Started.HandleOn(Thread.UI, () => Play());
             View.Paused.HandleOn(Thread.UI, () => Pause());
@@ -29,6 +32,15 @@ namespace Zebble
             View.Stopped.HandleOn(Thread.UI, () => Stop());
 
             LoadVideo();
+        }
+
+        void OnFrameChanged()
+        {
+            if (PlayerLayer == null) return;
+            var frame = View.GetFrame();
+
+            Frame = frame;
+            PlayerLayer.Frame = Bounds;
         }
 
         void Play()
