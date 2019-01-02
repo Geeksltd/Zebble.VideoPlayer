@@ -5,54 +5,39 @@ namespace Zebble
     using Android.Widget;
     using Android.Views;
     using Zebble.AndroidOS;
+    using Android.Graphics;
+    using Android.Runtime;
+    using Zebble.Device;
 
-    class AndroidVideo : RelativeLayout
+    class AndroidVideo : RelativeLayout, ISurfaceHolderCallback, MediaPlayer.IOnPreparedListener
     {
-        VideoPlayer View;
-        MediaController MediaController;
+        SurfaceView VideoSurface;
+        MediaPlayer VideoPlayer;
 
-        VideoView Video;
+        VideoPlayer View;
+        bool surfaceCreated;
 
         public AndroidVideo(VideoPlayer view) : base(UIRuntime.CurrentActivity)
         {
             View = view;
 
-            Video = new VideoView(UIRuntime.CurrentActivity);
-            var @params = new RelativeLayout.LayoutParams(FrameLayout.LayoutParams.FillParent, FrameLayout.LayoutParams.FillParent);
+            var @params = new LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
             @params.AddRule(LayoutRules.AlignParentTop);
             @params.AddRule(LayoutRules.AlignParentBottom);
             @params.AddRule(LayoutRules.AlignParentLeft);
             @params.AddRule(LayoutRules.AlignParentRight);
-            Video.LayoutParameters = @params;
 
-            View.PathChanged.HandleOn(Thread.UI, () => LoadVideo());
-            View.Started.HandleOn(Thread.UI, () => Video.Start());
-            View.Paused.HandleOn(Thread.UI, () => Video.Pause());
-            View.Resumed.HandleOn(Thread.UI, () => Video.Resume());
-            View.Stopped.HandleOn(Thread.UI, () => Video.StopPlayback());
+            VideoSurface = new SurfaceView(UIRuntime.CurrentActivity);
+            VideoSurface.SetBackgroundColor(Android.Graphics.Color.Transparent);
+            VideoSurface.Holder.AddCallback(this);
+            VideoSurface.LayoutParameters = @params;
+            AddView(VideoSurface);
 
-            LoadVideo();
-
-            AddView(Video);
-        }
-
-        void LoadVideo()
-        {
-            var path = View.Path;
-
-            MediaController = new MediaController(UIRuntime.CurrentActivity);
-            MediaController.SetAnchorView(this);
-
-            if (View.ShowControls)
-                Video.SetMediaController(MediaController);
-
-            if (path.IsUrl()) Video.SetVideoURI(Android.Net.Uri.Parse(path));
-            else Video.SetVideoPath(Device.IO.AbsolutePath(path));
-
-            Video.SetOnPreparedListener(new MediaPlayerDelegate { Loop = View.Loop });
-
-            Video.Start();
-            Video.SetZOrderOnTop(onTop: true);
+            View.PathChanged.HandleOn(Thread.UI, () => StartVideo());
+            View.Started.HandleOn(Thread.UI, () => VideoPlayer.Start());
+            View.Paused.HandleOn(Thread.UI, () => VideoPlayer.Pause());
+            View.Resumed.HandleOn(Thread.UI, () => VideoPlayer.Start());
+            View.Stopped.HandleOn(Thread.UI, () => VideoPlayer.Stop());
         }
 
         public override ViewStates Visibility
@@ -75,23 +60,60 @@ namespace Zebble
         {
             if (disposing)
             {
-                Video.Pause();
-                Video.StopPlayback();
-                MediaController?.Dispose();
-                MediaController = null;
-                View = null;
+                if(VideoPlayer!=null)
+                {
+                    VideoPlayer.Release();
+                    VideoPlayer = null;
+                }
             }
 
             base.Dispose(disposing);
         }
-    }
 
-    public class MediaPlayerDelegate : Java.Lang.Object, MediaPlayer.IOnPreparedListener
-    {
-        public bool Loop;
+        public void SurfaceChanged(ISurfaceHolder holder, [GeneratedEnum] Format format, int width, int height)
+        {
+        }
+
+        public void SurfaceCreated(ISurfaceHolder holder)
+        {
+            surfaceCreated = true;
+            StartVideo();
+        }
+
+        private void StartVideo()
+        {
+            if (surfaceCreated == false)
+                return;
+
+            if (VideoPlayer == null)
+            {
+                VideoPlayer = new MediaPlayer();
+                VideoPlayer.SetDisplay(VideoSurface.Holder);
+            }
+
+            try
+            {
+                VideoPlayer.SetDataSource(View.Path);
+                VideoPlayer.SetVideoScalingMode(VideoScalingMode.ScaleToFitWithCropping);
+                VideoPlayer.SetOnPreparedListener(this);
+                VideoPlayer.Looping = View.Loop;
+                VideoPlayer.Prepare();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.ToFullMessage());
+            }
+        }
+
+        public void SurfaceDestroyed(ISurfaceHolder holder)
+        {
+        }
+
         public void OnPrepared(MediaPlayer mp)
         {
-            mp.Looping = Loop;
+            if (View.AutoPlay)
+                VideoPlayer.Start();
         }
+
     }
 }
