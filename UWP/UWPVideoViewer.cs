@@ -22,6 +22,7 @@ namespace Zebble
             View.Stopped.HandleOn(Thread.UI, () => Result.Stop());
 
             Result = new controls.MediaElement { Stretch = media.Stretch.UniformToFill };
+            Result.MediaEnded += (e, args) => View.FinishedPlaying.RaiseOn(Thread.UI);
         }
 
         public async Task<controls.MediaElement> Render()

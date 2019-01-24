@@ -1,12 +1,11 @@
 namespace Zebble
 {
-    using System;
-    using Android.Media;
-    using Android.Widget;
-    using Android.Views;
-    using Zebble.AndroidOS;
     using Android.Graphics;
+    using Android.Media;
     using Android.Runtime;
+    using Android.Views;
+    using Android.Widget;
+    using System;
     using Zebble.Device;
 
     class AndroidVideo : RelativeLayout, ISurfaceHolderCallback, MediaPlayer.IOnPreparedListener
@@ -38,6 +37,8 @@ namespace Zebble
             View.Paused.HandleOn(Thread.UI, () => VideoPlayer.Pause());
             View.Resumed.HandleOn(Thread.UI, () => VideoPlayer.Start());
             View.Stopped.HandleOn(Thread.UI, () => VideoPlayer.Stop());
+
+            VideoPlayer.Completion += (e, args) => View.FinishedPlaying.RaiseOn(Thread.UI);
         }
 
         public override ViewStates Visibility
@@ -60,7 +61,7 @@ namespace Zebble
         {
             if (disposing)
             {
-                if(VideoPlayer!=null)
+                if (VideoPlayer != null)
                 {
                     VideoPlayer.Release();
                     VideoPlayer = null;

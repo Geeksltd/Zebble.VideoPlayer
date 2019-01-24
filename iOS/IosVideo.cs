@@ -1,8 +1,8 @@
 namespace Zebble
 {
-    using System;
     using AVFoundation;
     using Foundation;
+    using System;
     using UIKit;
 
     class IosVideo : UIView
@@ -30,6 +30,11 @@ namespace Zebble
             View.Paused.HandleOn(Thread.UI, () => Pause());
             View.Resumed.HandleOn(Thread.UI, () => Play());
             View.Stopped.HandleOn(Thread.UI, () => Stop());
+
+            NSNotificationCenter.DefaultCenter.AddObserver(AVPlayerItem.DidPlayToEndTimeNotification, (notify) =>
+            {
+                View.FinishedPlaying.RaiseOn(Thread.UI);
+            });
 
             LoadVideo();
         }

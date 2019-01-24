@@ -3,11 +3,14 @@
     public partial class VideoPlayer : View, IRenderedBy<VideoPlayerRenderer>
     {
         string path;
-        public readonly AsyncEvent PathChanged = new AsyncEvent();
-        public readonly AsyncEvent Started = new AsyncEvent();
-        public readonly AsyncEvent Paused = new AsyncEvent();
-        public readonly AsyncEvent Resumed = new AsyncEvent();
-        public readonly AsyncEvent Stopped = new AsyncEvent();
+        internal readonly AsyncEvent PathChanged = new AsyncEvent();
+        internal readonly AsyncEvent Started = new AsyncEvent();
+        internal readonly AsyncEvent Paused = new AsyncEvent();
+        internal readonly AsyncEvent Resumed = new AsyncEvent();
+        internal readonly AsyncEvent Stopped = new AsyncEvent();
+
+        public AsyncEvent FinishedPlaying = new AsyncEvent();
+
 
         public string Path
         {
