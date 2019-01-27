@@ -6,6 +6,7 @@ namespace Zebble
     using Android.Views;
     using Android.Widget;
     using System;
+    using System.Threading.Tasks;
     using Zebble.Device;
 
     class AndroidVideo : RelativeLayout, ISurfaceHolderCallback, MediaPlayer.IOnPreparedListener
@@ -31,14 +32,6 @@ namespace Zebble
             VideoSurface.Holder.AddCallback(this);
             VideoSurface.LayoutParameters = @params;
             AddView(VideoSurface);
-
-            View.PathChanged.HandleOn(Thread.UI, () => StartVideo());
-            View.Started.HandleOn(Thread.UI, () => VideoPlayer.Start());
-            View.Paused.HandleOn(Thread.UI, () => VideoPlayer.Pause());
-            View.Resumed.HandleOn(Thread.UI, () => VideoPlayer.Start());
-            View.Stopped.HandleOn(Thread.UI, () => VideoPlayer.Stop());
-
-            VideoPlayer.Completion += (e, args) => View.FinishedPlaying.RaiseOn(Thread.UI);
         }
 
         public override ViewStates Visibility
@@ -78,18 +71,29 @@ namespace Zebble
         public void SurfaceCreated(ISurfaceHolder holder)
         {
             surfaceCreated = true;
-            StartVideo();
+            StartVideo().RunInParallel();
         }
 
-        private void StartVideo()
+        private Task StartVideo()
         {
             if (surfaceCreated == false)
-                return;
+                return Task.CompletedTask;
 
             if (VideoPlayer == null)
             {
                 VideoPlayer = new MediaPlayer();
                 VideoPlayer.SetDisplay(VideoSurface.Holder);
+            }
+
+            if (View.PathChanged.HandlersCount == 0)
+            {
+                View.PathChanged.HandleOn(Thread.UI, () => StartVideo());
+                View.Started.HandleOn(Thread.UI, () => Play());
+                View.Paused.HandleOn(Thread.UI, () => Pause());
+                View.Resumed.HandleOn(Thread.UI, () => Play());
+                View.Stopped.HandleOn(Thread.UI, () => Stop());
+
+                VideoPlayer.Completion += (e, args) => View.FinishedPlaying.RaiseOn(Thread.UI);
             }
 
             try
@@ -98,12 +102,14 @@ namespace Zebble
                 VideoPlayer.SetVideoScalingMode(VideoScalingMode.ScaleToFitWithCropping);
                 VideoPlayer.SetOnPreparedListener(this);
                 VideoPlayer.Looping = View.Loop;
-                VideoPlayer.Prepare();
+                VideoPlayer.PrepareAsync();
             }
-            catch (Exception ex)
+            catch (Java.Lang.Exception ex)
             {
                 Log.Error(ex.ToFullMessage());
             }
+
+            return Task.CompletedTask;
         }
 
         public void SurfaceDestroyed(ISurfaceHolder holder)
@@ -116,5 +122,20 @@ namespace Zebble
                 VideoPlayer.Start();
         }
 
+        void Play() => VideoPlayer.Start();
+                       
+        void Pause()
+        {
+            if (VideoPlayer.IsPlaying)
+                VideoPlayer.Pause();
+            else
+                Stop();
+        }
+
+        void Stop()
+        {
+            VideoPlayer.Pause();
+            VideoPlayer.SeekTo(0);
+        }
     }
 }
