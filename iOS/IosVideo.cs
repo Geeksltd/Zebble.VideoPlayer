@@ -67,9 +67,16 @@ namespace Zebble
         void Stop()
         {
             if (View.Loop)
+            {
                 QueuePlayer?.Pause();
+                QueuePlayer?.Seek(CoreMedia.CMTime.Zero);
+            }
             else
+            {
                 Player?.Pause();
+                Player?.Seek(CoreMedia.CMTime.Zero);
+            }
+
         }
 
         void LoadVideo()
