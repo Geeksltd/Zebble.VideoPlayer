@@ -30,7 +30,7 @@ namespace Zebble
             View.PathChanged.HandleOn(Thread.UI, () => LoadVideo());
             View.Started.HandleOn(Thread.UI, () => Play());
             View.Paused.HandleOn(Thread.UI, () => Pause());
-            View.Resumed.HandleOn(Thread.UI, () => Play());
+            View.Resumed.HandleOn(Thread.UI, () => Resume());
             View.Stopped.HandleOn(Thread.UI, () => Stop());
 
             NSNotificationCenter.DefaultCenter.AddObserver(AVPlayerItem.DidPlayToEndTimeNotification, (notify) =>
@@ -51,28 +51,18 @@ namespace Zebble
             PlayerLayer.Frame = Bounds;
         }
 
-        void Play()
+        void Resume()
         {
             if (View.Loop)
-            {
-                if (IsStopped)
-                {
-                    QueuePlayer?.Seek(CoreMedia.CMTime.Zero);
-                    IsStopped = false;
-                }
-
                 QueuePlayer?.Play();
-            }
             else
-            {
-                if (IsStopped)
-                {
-                    Player?.Seek(CoreMedia.CMTime.Zero);
-                    IsStopped = false;
-                }
-
                 Player?.Play();
-            }
+        }
+
+        void Play()
+        {
+            QueuePlayer?.Seek(CoreMedia.CMTime.Zero);
+            Resume();
         }
 
         void Pause()
