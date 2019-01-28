@@ -17,6 +17,8 @@ namespace Zebble
         AVPlayerLooper PlayerLooper;
         AVQueuePlayer QueuePlayer;
 
+        bool IsStopped = false;
+
 
         public IosVideo(VideoPlayer view)
         {
@@ -34,6 +36,7 @@ namespace Zebble
             NSNotificationCenter.DefaultCenter.AddObserver(AVPlayerItem.DidPlayToEndTimeNotification, (notify) =>
             {
                 View.FinishedPlaying.RaiseOn(Thread.UI);
+                IsStopped = true;
             });
 
             LoadVideo();
@@ -51,9 +54,25 @@ namespace Zebble
         void Play()
         {
             if (View.Loop)
+            {
+                if (IsStopped)
+                {
+                    QueuePlayer?.Seek(CoreMedia.CMTime.Zero);
+                    IsStopped = false;
+                }
+
                 QueuePlayer?.Play();
+            }
             else
+            {
+                if (IsStopped)
+                {
+                    Player?.Seek(CoreMedia.CMTime.Zero);
+                    IsStopped = false;
+                }
+
                 Player?.Play();
+            }
         }
 
         void Pause()
@@ -67,16 +86,11 @@ namespace Zebble
         void Stop()
         {
             if (View.Loop)
-            {
                 QueuePlayer?.Pause();
-                QueuePlayer?.Seek(CoreMedia.CMTime.Zero);
-            }
             else
-            {
                 Player?.Pause();
-                Player?.Seek(CoreMedia.CMTime.Zero);
-            }
 
+            IsStopped = true;
         }
 
         void LoadVideo()
