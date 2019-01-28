@@ -35,7 +35,7 @@ namespace Zebble
 
             NSNotificationCenter.DefaultCenter.AddObserver(AVPlayerItem.DidPlayToEndTimeNotification, (notify) =>
             {
-                View.FinishedPlaying.RaiseOn(Thread.UI);
+                View?.FinishedPlaying.RaiseOn(Thread.UI);
                 IsStopped = true;
             });
 
