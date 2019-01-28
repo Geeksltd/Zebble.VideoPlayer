@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
   <metadata>
     <id>Zebble.VideoPlayer</id>
-    <version>4.2.373</version>
+    <version>4.2.374</version>
     <title>Video Player for Zebble (Xamarin)</title>
     <description>Native video player plugin for Zebble.</description>
     <projectUrl>https://github.com/Geeksltd/Zebble.VideoPlayer</projectUrl>
