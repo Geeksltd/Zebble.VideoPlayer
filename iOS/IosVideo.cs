@@ -3,6 +3,8 @@ namespace Zebble
     using AVFoundation;
     using Foundation;
     using System;
+    using System.Linq;
+    using System.Threading;
     using UIKit;
 
     class IosVideo : UIView
@@ -16,9 +18,6 @@ namespace Zebble
 
         AVPlayerLooper PlayerLooper;
         AVQueuePlayer QueuePlayer;
-
-        bool IsStopped = false;
-
 
         public IosVideo(VideoPlayer view)
         {
@@ -36,7 +35,6 @@ namespace Zebble
             NSNotificationCenter.DefaultCenter.AddObserver(AVPlayerItem.DidPlayToEndTimeNotification, (notify) =>
             {
                 View?.FinishedPlaying.RaiseOn(Thread.UI);
-                IsStopped = true;
             });
 
             LoadVideo();
@@ -79,8 +77,6 @@ namespace Zebble
                 QueuePlayer?.Pause();
             else
                 Player?.Pause();
-
-            IsStopped = true;
         }
 
         void LoadVideo()
@@ -94,12 +90,18 @@ namespace Zebble
             if (url.IsUrl())
             {
                 UrlAsset = new AVUrlAsset(NSUrl.FromString(url));
+
+                SetNaturalVideoSize(asset: null, urlAsset: UrlAsset);
+
                 PlayerItem = new AVPlayerItem(UrlAsset);
             }
             else
             {
                 url = "file://" + Device.IO.File(url).FullName;
                 Asset = AVAsset.FromUrl(NSUrl.FromString(url));
+
+                SetNaturalVideoSize(asset: Asset, urlAsset: null);
+
                 PlayerItem = new AVPlayerItem(Asset);
             }
 
@@ -116,8 +118,8 @@ namespace Zebble
             }
 
             PlayerLayer.VideoGravity = AVLayerVideoGravity.ResizeAspectFill;
-            PlayerLayer.Frame = Bounds;
 
+            PlayerLayer.Frame = Bounds;
             Layer.AddSublayer(PlayerLayer);
 
             UIGraphics.EndImageContext();
@@ -129,6 +131,29 @@ namespace Zebble
                 else
                     Player.Play();
             }
+
+            View.LoadCompleted.Raise();
+        }
+
+        void SetNaturalVideoSize(AVAsset asset = null, AVUrlAsset urlAsset = null)
+        {
+            if (asset == null && urlAsset == null) return;
+
+            AVAssetTrack[] tracks;
+
+            if (asset == null) tracks = urlAsset.TracksWithMediaType(AVMediaType.Video);
+            else tracks = asset.TracksWithMediaType(AVMediaType.Video);
+
+            if (!tracks.Any()) return;
+
+            var track = tracks.First();
+
+            var size = track.NaturalSize;
+            var txf = track.PreferredTransform;
+
+            var videoSize = txf.TransformSize(size);
+
+            View.VideoSize = new Size((float)videoSize.Width, (float)videoSize.Height);
         }
 
         protected override void Dispose(bool disposing)

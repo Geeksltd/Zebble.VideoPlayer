@@ -10,7 +10,9 @@
         internal readonly AsyncEvent Stopped = new AsyncEvent();
 
         public AsyncEvent FinishedPlaying = new AsyncEvent();
+        public readonly AsyncEvent LoadCompleted = new AsyncEvent();
 
+        public Size VideoSize { get; set; } = new Size(0, 0);
 
         public string Path
         {

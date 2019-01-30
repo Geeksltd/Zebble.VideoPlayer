@@ -1,9 +1,15 @@
 namespace Zebble
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Runtime.InteropServices.WindowsRuntime;
     using System.Threading.Tasks;
+    using Windows.Graphics.Imaging;
+    using Windows.Media.Editing;
+    using Windows.Networking.BackgroundTransfer;
+    using Windows.Storage;
+    using Windows.UI.Xaml.Media.Imaging;
     using controls = Windows.UI.Xaml.Controls;
     using media = Windows.UI.Xaml.Media;
 
@@ -50,14 +56,18 @@ namespace Zebble
             if (url.IsUrl())
             {
                 Result.Source = url.AsUri();
+                View.VideoSize = await GetVideoSize(source: url.AsUri());
             }
             else
             {
                 try
                 {
-                    var data = await Device.IO.File(url).ReadAllBytesAsync();
+                    var file = Device.IO.File(url);
+                    var data = await file.ReadAllBytesAsync();
                     var source = data.AsBuffer().AsStream().AsRandomAccessStream();
                     Result.SetSource(source, string.Empty);
+
+                    View.VideoSize = await GetVideoSize(file: file);
                 }
                 catch (Exception ex)
                 {
@@ -67,6 +77,35 @@ namespace Zebble
 
             Result.AutoPlay = View.AutoPlay;
             Result.IsLooping = View.Loop;
+
+            Result.Loaded += (e, args) => View.LoadCompleted.Raise();
+        }
+
+        async Task<Size> GetVideoSize(Uri source = null, FileInfo file = null)
+        {
+            TimeSpan timeOfFrame = new TimeSpan(0, 0, 1);
+            StorageFile currentFile;
+
+            if (source != null)
+            {
+                var fileBytes = await Device.Network.Download(source);
+                var tempFile = Device.IO.CreateTempFile(".mp4");
+                await tempFile.WriteAllBytesAsync(fileBytes);
+                currentFile = await tempFile.ToStorageFile();
+            }
+            else
+            {
+                currentFile = await file.ToStorageFile();
+            }
+
+            var encodingPropertiesToRetrieve = new List<string>();
+            encodingPropertiesToRetrieve.Add("System.Video.FrameHeight");
+            encodingPropertiesToRetrieve.Add("System.Video.FrameWidth");
+            var encodingProperties = await currentFile.Properties.RetrievePropertiesAsync(encodingPropertiesToRetrieve);
+            uint frameHeight = (uint)encodingProperties["System.Video.FrameHeight"];
+            uint frameWidth = (uint)encodingProperties["System.Video.FrameWidth"];
+
+            return new Size(frameWidth, frameHeight);
         }
     }
 }
