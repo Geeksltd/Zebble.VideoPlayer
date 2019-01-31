@@ -8,8 +8,9 @@
         internal readonly AsyncEvent Paused = new AsyncEvent();
         internal readonly AsyncEvent Resumed = new AsyncEvent();
         internal readonly AsyncEvent Stopped = new AsyncEvent();
+        internal readonly AsyncEvent SoughtBeginning = new AsyncEvent();
 
-        public AsyncEvent FinishedPlaying = new AsyncEvent();
+        public readonly AsyncEvent FinishedPlaying = new AsyncEvent();
         public readonly AsyncEvent LoadCompleted = new AsyncEvent();
 
         public Size VideoSize { get; set; } = new Size(0, 0);
@@ -38,6 +39,9 @@
         public void Resume() => Resumed.Raise();
 
         public void Stop() => Stopped.Raise();
+
+        public void SeekBeginning() => SoughtBeginning.Raise();
+
 
         public override void Dispose()
         {

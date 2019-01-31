@@ -5,11 +5,7 @@ namespace Zebble
     using System.IO;
     using System.Runtime.InteropServices.WindowsRuntime;
     using System.Threading.Tasks;
-    using Windows.Graphics.Imaging;
-    using Windows.Media.Editing;
-    using Windows.Networking.BackgroundTransfer;
     using Windows.Storage;
-    using Windows.UI.Xaml.Media.Imaging;
     using controls = Windows.UI.Xaml.Controls;
     using media = Windows.UI.Xaml.Media;
 
@@ -26,6 +22,7 @@ namespace Zebble
             View.Paused.HandleOn(Thread.UI, () => Result.Pause());
             View.Resumed.HandleOn(Thread.UI, () => Result.Play());
             View.Stopped.HandleOn(Thread.UI, () => Result.Stop());
+            View.SoughtBeginning.HandleOn(Thread.UI, () => Result.Position = 0.Milliseconds());
 
             Result = new controls.MediaElement { Stretch = media.Stretch.UniformToFill };
             Result.MediaEnded += (e, args) => View.FinishedPlaying.RaiseOn(Thread.UI);

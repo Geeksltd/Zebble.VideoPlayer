@@ -92,6 +92,7 @@ namespace Zebble
                 View.Paused.HandleOn(Thread.UI, () => Pause());
                 View.Resumed.HandleOn(Thread.UI, () => Play());
                 View.Stopped.HandleOn(Thread.UI, () => Stop());
+                View.SoughtBeginning.HandleOn(Thread.UI, () => SeekBeginning());
 
                 VideoPlayer.Completion += (e, args) => View.FinishedPlaying.RaiseOn(Thread.UI);
                 VideoPlayer.VideoSizeChanged += (e, args) =>
@@ -138,6 +139,11 @@ namespace Zebble
                 VideoPlayer.Pause();
             else
                 Stop();
+        }
+
+        void SeekBeginning()
+        {
+            VideoPlayer.SeekTo(0);
         }
 
         void Stop()

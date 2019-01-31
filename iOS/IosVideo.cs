@@ -4,7 +4,6 @@ namespace Zebble
     using Foundation;
     using System;
     using System.Linq;
-    using System.Threading;
     using UIKit;
 
     class IosVideo : UIView
@@ -31,6 +30,7 @@ namespace Zebble
             View.Paused.HandleOn(Thread.UI, () => Pause());
             View.Resumed.HandleOn(Thread.UI, () => Resume());
             View.Stopped.HandleOn(Thread.UI, () => Stop());
+            View.SoughtBeginning.HandleOn(Thread.UI, () => SeekBeginning());
 
             NSNotificationCenter.DefaultCenter.AddObserver(AVPlayerItem.DidPlayToEndTimeNotification, (notify) =>
             {
@@ -57,9 +57,17 @@ namespace Zebble
                 Player?.Play();
         }
 
+        void SeekBeginning()
+        {
+            if (View.Loop)
+                QueuePlayer?.Seek(CoreMedia.CMTime.Zero);
+            else
+                Player?.Seek(CoreMedia.CMTime.Zero);
+        }
+
         void Play()
         {
-            QueuePlayer?.Seek(CoreMedia.CMTime.Zero);
+            SeekBeginning();
             Resume();
         }
 
