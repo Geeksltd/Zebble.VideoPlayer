@@ -15,22 +15,44 @@ namespace Zebble
         MediaPlayer VideoPlayer;
 
         VideoPlayer View;
-        bool surfaceCreated;
+        bool surfaceCreated, isVideoCreatedDifferently;
+        readonly AsyncEvent SurfaceInitialized = new AsyncEvent();
 
-        public AndroidVideo(VideoPlayer view) : base(UIRuntime.CurrentActivity)
+        public AndroidVideo(IntPtr handle, JniHandleOwnership transfer) : base(UIRuntime.CurrentActivity) => CreateMediaPlayer(null);
+
+        public AndroidVideo(VideoPlayer view) : base(UIRuntime.CurrentActivity) => CreateMediaPlayer(view);
+
+        void CreateMediaPlayer(VideoPlayer view)
         {
-            View = view;
+            if (view == null)
+            {
+                isVideoCreatedDifferently = true;
+                View = Zebble.VideoPlayer.Instance;
+            }
+            else Zebble.VideoPlayer.Instance = View = view;
 
+            var @params = CreateLayout();
+            CreateSurfceView();
+
+            VideoSurface.LayoutParameters = @params;
+        }
+
+        LayoutParams CreateLayout()
+        {
             var @params = new LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
             @params.AddRule(LayoutRules.AlignParentTop);
             @params.AddRule(LayoutRules.AlignParentBottom);
             @params.AddRule(LayoutRules.AlignParentLeft);
             @params.AddRule(LayoutRules.AlignParentRight);
 
+            return @params;
+        }
+
+        void CreateSurfceView()
+        {
             VideoSurface = new SurfaceView(UIRuntime.CurrentActivity);
             VideoSurface.SetBackgroundColor(Android.Graphics.Color.Transparent);
             VideoSurface.Holder.AddCallback(this);
-            VideoSurface.LayoutParameters = @params;
             AddView(VideoSurface);
         }
 
@@ -70,19 +92,44 @@ namespace Zebble
 
         public void SurfaceCreated(ISurfaceHolder holder)
         {
-            surfaceCreated = true;
+            var surface = holder.Surface;
+
+            if (surface == null || !surface.IsValid) surfaceCreated = false;
+            else surfaceCreated = true;
+
             StartVideo().RunInParallel();
         }
 
-        private Task StartVideo()
+        public void SurfaceDestroyed(ISurfaceHolder holder)
         {
-            if (surfaceCreated == false)
-                return Task.CompletedTask;
+            surfaceCreated = false;
+            holder.Surface.Release();
+        }
+
+        public void OnPrepared(MediaPlayer mp)
+        {
+            if (View.AutoPlay)
+                mp.Start();
+        }
+
+        Task StartVideo()
+        {
+            if (surfaceCreated == false && isVideoCreatedDifferently == false) return Task.CompletedTask;
+            else if (surfaceCreated == false && isVideoCreatedDifferently)
+            {
+                CreateSurfceView();
+                var @params = CreateLayout();
+                VideoSurface.LayoutParameters = @params;
+            }
 
             if (VideoPlayer == null)
             {
-                VideoPlayer = new MediaPlayer();
-                VideoPlayer.SetDisplay(VideoSurface.Holder);
+                try
+                {
+                    VideoPlayer = new MediaPlayer();
+                    VideoPlayer.SetDisplay(VideoSurface.Holder);
+                }
+                catch { }
             }
 
             if (View.PathChanged.HandlersCount == 0)
@@ -121,16 +168,6 @@ namespace Zebble
             return Task.CompletedTask;
         }
 
-        public void SurfaceDestroyed(ISurfaceHolder holder)
-        {
-        }
-
-        public void OnPrepared(MediaPlayer mp)
-        {
-            if (View.AutoPlay)
-                VideoPlayer.Start();
-        }
-
         void Play() => VideoPlayer.Start();
 
         void Pause()
@@ -141,10 +178,7 @@ namespace Zebble
                 Stop();
         }
 
-        void SeekBeginning()
-        {
-            VideoPlayer.SeekTo(0);
-        }
+        void SeekBeginning() => VideoPlayer.SeekTo(0);
 
         void Stop()
         {

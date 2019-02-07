@@ -10,6 +10,8 @@
         internal readonly AsyncEvent Stopped = new AsyncEvent();
         internal readonly AsyncEvent SoughtBeginning = new AsyncEvent();
 
+        internal static VideoPlayer Instance;
+
         public readonly AsyncEvent FinishedPlaying = new AsyncEvent();
         public readonly AsyncEvent LoadCompleted = new AsyncEvent();
 
