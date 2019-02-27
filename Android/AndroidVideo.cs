@@ -154,7 +154,11 @@ namespace Zebble
 
             try
             {
-                VideoPlayer.SetDataSource(View.Path);
+                var path = View.Path;
+                if (Zebble.Device.IO.IsAbsolute(path)) path = "file://" + path;
+                else if (!path.IsUrl()) path = Zebble.Device.IO.AbsolutePath(path);
+
+                VideoPlayer.SetDataSource(path);
                 VideoPlayer.SetVideoScalingMode(VideoScalingMode.ScaleToFitWithCropping);
                 VideoPlayer.SetOnPreparedListener(this);
                 VideoPlayer.Looping = View.Loop;
