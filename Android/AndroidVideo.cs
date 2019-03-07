@@ -104,6 +104,8 @@ namespace Zebble
         {
             surfaceCreated = false;
             holder.Surface.Release();
+
+            VideoPlayer = null;
         }
 
         public void OnPrepared(MediaPlayer mp)
@@ -128,6 +130,7 @@ namespace Zebble
                 {
                     VideoPlayer = new MediaPlayer();
                     VideoPlayer.SetDisplay(VideoSurface.Holder);
+                    SetEvents(clear: true);
                 }
                 catch { }
             }
@@ -140,16 +143,6 @@ namespace Zebble
                 View.Resumed.HandleOn(Thread.UI, () => Play());
                 View.Stopped.HandleOn(Thread.UI, () => Stop());
                 View.SoughtBeginning.HandleOn(Thread.UI, () => SeekBeginning());
-
-                VideoPlayer.Completion += (e, args) => View.FinishedPlaying.RaiseOn(Thread.UI);
-                VideoPlayer.VideoSizeChanged += (e, args) =>
-                {
-                    if (View.VideoSize.Width == 0)
-                    {
-                        View.VideoSize = new Size(VideoPlayer.VideoWidth, VideoPlayer.VideoHeight);
-                        View.LoadCompleted.Raise();
-                    }
-                };
             }
 
             try
@@ -188,6 +181,29 @@ namespace Zebble
         {
             VideoPlayer.Pause();
             VideoPlayer.SeekTo(0);
+        }
+
+        async void OnCompletion(object e, EventArgs args) => await View.FinishedPlaying.RaiseOn(Thread.UI);
+
+        void OnVideoSizeChanged(object e, EventArgs args)
+        {
+            if (View.VideoSize.Width == 0)
+            {
+                View.VideoSize = new Size(VideoPlayer.VideoWidth, VideoPlayer.VideoHeight);
+                View.LoadCompleted.Raise();
+            }
+        }
+
+        void SetEvents(bool clear = false)
+        {
+            if (clear)
+            {
+                VideoPlayer.Completion -= OnCompletion;
+                VideoPlayer.VideoSizeChanged -= OnVideoSizeChanged;
+            }
+
+            VideoPlayer.Completion += OnCompletion;
+            VideoPlayer.VideoSizeChanged += OnVideoSizeChanged;
         }
     }
 }
