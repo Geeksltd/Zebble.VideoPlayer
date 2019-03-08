@@ -5,6 +5,7 @@ namespace Zebble
     using System;
     using System.Linq;
     using UIKit;
+    using static Zebble.VideoPlayer;
 
     class IosVideo : UIView
     {
@@ -18,6 +19,8 @@ namespace Zebble
         AVPlayerLooper PlayerLooper;
         AVQueuePlayer QueuePlayer;
 
+        Preparedhandler Prepared = new Preparedhandler();
+
         public IosVideo(VideoPlayer view)
         {
             View = view;
@@ -25,12 +28,13 @@ namespace Zebble
             view.Width.Changed.HandleOn(Thread.UI, () => OnFrameChanged());
             view.Height.Changed.HandleOn(Thread.UI, () => OnFrameChanged());
 
+            View.Buffered.HandleOn(Thread.UI, () => BufferVideo());
             View.PathChanged.HandleOn(Thread.UI, () => LoadVideo());
-            View.Started.HandleOn(Thread.UI, () => Play());
-            View.Paused.HandleOn(Thread.UI, () => Pause());
-            View.Resumed.HandleOn(Thread.UI, () => Resume());
-            View.Stopped.HandleOn(Thread.UI, () => Stop());
-            View.SoughtBeginning.HandleOn(Thread.UI, () => SeekBeginning());
+            View.Started.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Play));
+            View.Paused.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Pause));
+            View.Resumed.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Resume));
+            View.Stopped.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Stop));
+            View.SoughtBeginning.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.SeekToBegining));
 
             NSNotificationCenter.DefaultCenter.AddObserver(AVPlayerItem.DidPlayToEndTimeNotification, (notify) =>
             {
@@ -89,49 +93,85 @@ namespace Zebble
 
         void LoadVideo()
         {
-            UIGraphics.BeginImageContext(new CoreGraphics.CGSize(1, 1));
-
-            Frame = View.GetFrame();
-
             string url = View.Path;
+            if (string.IsNullOrEmpty(url)) return;
 
             if (url.IsUrl())
             {
-                UrlAsset = new AVUrlAsset(NSUrl.FromString(url));
-
-                SetNaturalVideoSize(asset: null, urlAsset: UrlAsset);
-
-                PlayerItem = new AVPlayerItem(UrlAsset);
+                if (View.AutoBuffer) BufferVideo();
             }
             else
             {
+                UIGraphics.BeginImageContext(new CoreGraphics.CGSize(1, 1));
+
+                Frame = View.GetFrame();
+
                 url = "file://" + Device.IO.File(url).FullName;
                 Asset = AVAsset.FromUrl(NSUrl.FromString(url));
 
                 SetNaturalVideoSize(asset: Asset, urlAsset: null);
 
                 PlayerItem = new AVPlayerItem(Asset);
+
+                InitializePlayerItem();
+
+                UIGraphics.EndImageContext();
             }
 
+            View.LoadCompleted.Raise();
+        }
+
+        void SetStatusObserver()
+        {
+            PlayerItem.AddObserver(Self, "status", 0, IntPtr.Zero);
+        }
+
+        void InitializePlayerItem()
+        {
             if (View.Loop)
             {
                 QueuePlayer = new AVQueuePlayer();
                 PlayerLayer = AVPlayerLayer.FromPlayer(QueuePlayer);
                 PlayerLooper = new AVPlayerLooper(QueuePlayer, PlayerItem, CoreMedia.CMTimeRange.InvalidRange);
+
+                SetStatusObserver();
             }
             else
             {
                 Player = new AVPlayer(PlayerItem);
                 PlayerLayer = AVPlayerLayer.FromPlayer(Player);
+
+                SetStatusObserver();
             }
 
             PlayerLayer.VideoGravity = AVLayerVideoGravity.ResizeAspectFill;
 
             PlayerLayer.Frame = Bounds;
             Layer.AddSublayer(PlayerLayer);
+        }
+
+        void BufferVideo()
+        {
+            string url = View.Path;
+            if (string.IsNullOrEmpty(url)) return;
+
+            UIGraphics.BeginImageContext(new CoreGraphics.CGSize(1, 1));
+
+            Frame = View.GetFrame();
+
+            UrlAsset = new AVUrlAsset(NSUrl.FromString(url));
+
+            SetNaturalVideoSize(asset: null, urlAsset: UrlAsset);
+
+            PlayerItem = new AVPlayerItem(UrlAsset);
+
+            InitializePlayerItem();
 
             UIGraphics.EndImageContext();
+        }
 
+        void OnReady()
+        {
             if (View.AutoPlay)
             {
                 if (View.Loop)
@@ -140,7 +180,29 @@ namespace Zebble
                     Player.Play();
             }
 
-            View.LoadCompleted.Raise();
+            Prepared.Handle(result =>
+            {
+                switch (result)
+                {
+                    case VideoState.Play:
+                        Play();
+                        break;
+                    case VideoState.Pause:
+                        Pause();
+                        break;
+                    case VideoState.Stop:
+                        Stop();
+                        break;
+                    case VideoState.SeekToBegining:
+                        SeekBeginning();
+                        break;
+                    case VideoState.Resume:
+                        Resume();
+                        break;
+                    default:
+                        break;
+                }
+            });
         }
 
         void SetNaturalVideoSize(AVAsset asset = null, AVUrlAsset urlAsset = null)
@@ -162,6 +224,19 @@ namespace Zebble
             var videoSize = txf.TransformSize(size);
 
             View.VideoSize = new Size((float)videoSize.Width, (float)videoSize.Height);
+        }
+
+        public override void ObserveValue(NSString keyPath, NSObject ofObject, NSDictionary change, IntPtr context)
+        {
+            if(ofObject is AVPlayerItem item && keyPath == "status")
+            {
+                if (item.Status == AVPlayerItemStatus.ReadyToPlay)
+                {
+                    View.IsReady = true;
+                    OnReady();
+                }
+                else View.IsReady = false;
+            }
         }
 
         protected override void Dispose(bool disposing)

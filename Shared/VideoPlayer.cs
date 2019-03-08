@@ -1,4 +1,8 @@
-﻿namespace Zebble
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace Zebble
 {
     public partial class VideoPlayer : View, IRenderedBy<VideoPlayerRenderer>
     {
@@ -9,6 +13,7 @@
         internal readonly AsyncEvent Resumed = new AsyncEvent();
         internal readonly AsyncEvent Stopped = new AsyncEvent();
         internal readonly AsyncEvent SoughtBeginning = new AsyncEvent();
+        internal readonly AsyncEvent Buffered = new AsyncEvent();
 
         internal static VideoPlayer Instance;
 
@@ -30,6 +35,10 @@
 
         public bool AutoPlay { get; set; }
 
+        public bool AutoBuffer { get; set; } = true;
+
+        public bool IsReady { get; set; }
+
         public bool Loop { get; set; }
 
         public bool ShowControls { get; set; }
@@ -44,11 +53,37 @@
 
         public void SeekBeginning() => SoughtBeginning.Raise();
 
+        public void BufferVideo() => Buffered.Raise();
 
         public override void Dispose()
         {
             PathChanged?.Dispose();
             base.Dispose();
+        }
+
+        internal enum VideoState { Play, Pause, Stop, SeekToBegining, Resume }
+        internal class Preparedhandler
+        {
+            readonly AsyncEvent<VideoState> Prepared = new AsyncEvent<VideoState>();
+            readonly HashSet<VideoState> QueuedActions = new HashSet<VideoState>();
+
+            public Task Raise(VideoState state)
+            {
+                if (!Prepared.IsHandled())
+                    QueuedActions.Add(state);
+
+                return Prepared.Raise(state);
+            }
+
+            public void Handle(Action<VideoState> action)
+            {
+                if (QueuedActions.Count > 0)
+                    foreach (var state in QueuedActions) action(state);
+
+                QueuedActions.Clear();
+                Prepared.ClearHandlers();
+                Prepared.Handle(action);
+            }
         }
     }
 }

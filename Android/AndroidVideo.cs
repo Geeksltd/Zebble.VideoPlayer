@@ -8,6 +8,7 @@ namespace Zebble
     using System;
     using System.Threading.Tasks;
     using Zebble.Device;
+    using static Zebble.VideoPlayer;
 
     class AndroidVideo : RelativeLayout, ISurfaceHolderCallback, MediaPlayer.IOnPreparedListener
     {
@@ -16,7 +17,7 @@ namespace Zebble
 
         VideoPlayer View;
         bool surfaceCreated, isVideoCreatedDifferently;
-        readonly AsyncEvent SurfaceInitialized = new AsyncEvent();
+        Preparedhandler Prepared = new Preparedhandler();
 
         public AndroidVideo(IntPtr handle, JniHandleOwnership transfer) : base(UIRuntime.CurrentActivity) => CreateMediaPlayer(null);
 
@@ -97,6 +98,7 @@ namespace Zebble
             if (surface == null || !surface.IsValid) surfaceCreated = false;
             else surfaceCreated = true;
 
+            Prepared = new Preparedhandler();
             StartVideo().RunInParallel();
         }
 
@@ -106,16 +108,40 @@ namespace Zebble
             holder.Surface.Release();
 
             VideoPlayer = null;
+            View.IsReady = false;
         }
 
         public void OnPrepared(MediaPlayer mp)
         {
+            View.IsReady = true;
             if (View.AutoPlay)
                 mp.Start();
+
+            Prepared.Handle(result =>
+            {
+                switch (result)
+                {
+                    case VideoState.Play:
+                        Play(mp);
+                        break;
+                    case VideoState.Pause:
+                        Pause(mp);
+                        break;
+                    case VideoState.Stop:
+                        Stop(mp);
+                        break;
+                    case VideoState.SeekToBegining:
+                        SeekBeginning(mp);
+                        break;
+                    default:
+                        break;
+                }
+            });
         }
 
         Task StartVideo()
         {
+            if (string.IsNullOrEmpty(View.Path)) return Task.CompletedTask;
             if (surfaceCreated == false && isVideoCreatedDifferently == false) return Task.CompletedTask;
             else if (surfaceCreated == false && isVideoCreatedDifferently)
             {
@@ -137,25 +163,29 @@ namespace Zebble
 
             if (View.PathChanged.HandlersCount == 0)
             {
+                View.Buffered.HandleOn(Thread.UI, () => VideoPlayer?.PrepareAsync());
                 View.PathChanged.HandleOn(Thread.UI, () => StartVideo());
-                View.Started.HandleOn(Thread.UI, () => Play());
-                View.Paused.HandleOn(Thread.UI, () => Pause());
-                View.Resumed.HandleOn(Thread.UI, () => Play());
-                View.Stopped.HandleOn(Thread.UI, () => Stop());
-                View.SoughtBeginning.HandleOn(Thread.UI, () => SeekBeginning());
+                View.Started.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Play));
+                View.Paused.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Pause));
+                View.Resumed.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Play));
+                View.Stopped.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Stop));
+                View.SoughtBeginning.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.SeekToBegining));
             }
 
             try
             {
                 var path = View.Path;
-                if (Zebble.Device.IO.IsAbsolute(path)) path = "file://" + path;
-                else if (!path.IsUrl()) path = Zebble.Device.IO.AbsolutePath(path);
+                if (IO.IsAbsolute(path)) path = "file://" + path;
+                else if (!path.IsUrl()) path = IO.AbsolutePath(path);
 
                 VideoPlayer.SetDataSource(path);
                 VideoPlayer.SetVideoScalingMode(VideoScalingMode.ScaleToFitWithCropping);
                 VideoPlayer.SetOnPreparedListener(this);
                 VideoPlayer.Looping = View.Loop;
-                VideoPlayer.PrepareAsync();
+                if (path.IsUrl() && View.AutoBuffer)
+                    VideoPlayer.PrepareAsync();
+                else if (!path.IsUrl())
+                    VideoPlayer.PrepareAsync();
             }
             catch (Java.Lang.Exception ex)
             {
@@ -165,22 +195,22 @@ namespace Zebble
             return Task.CompletedTask;
         }
 
-        void Play() => VideoPlayer.Start();
+        void Play(MediaPlayer mp) => mp.Start();
 
-        void Pause()
+        void Pause(MediaPlayer mp)
         {
-            if (VideoPlayer.IsPlaying)
-                VideoPlayer.Pause();
+            if (mp.IsPlaying)
+                mp.Pause();
             else
-                Stop();
+                Stop(mp);
         }
 
-        void SeekBeginning() => VideoPlayer.SeekTo(0);
+        void SeekBeginning(MediaPlayer mp) => mp.SeekTo(0);
 
-        void Stop()
+        void Stop(MediaPlayer mp)
         {
-            VideoPlayer.Pause();
-            VideoPlayer.SeekTo(0);
+            mp.Pause();
+            mp.SeekTo(0);
         }
 
         async void OnCompletion(object e, EventArgs args) => await View.FinishedPlaying.RaiseOn(Thread.UI);
@@ -189,7 +219,7 @@ namespace Zebble
         {
             if (View.VideoSize.Width == 0)
             {
-                View.VideoSize = new Size(VideoPlayer.VideoWidth, VideoPlayer.VideoHeight);
+                View.VideoSize = new Size(VideoPlayer?.VideoWidth ?? 0, VideoPlayer?.VideoHeight ?? 0);
                 View.LoadCompleted.Raise();
             }
         }
