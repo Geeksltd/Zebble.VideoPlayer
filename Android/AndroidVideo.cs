@@ -155,10 +155,12 @@ namespace Zebble
 
         void OnVideoSizeChanged(object e, EventArgs args)
         {
-            if (View.VideoSize.Width == 0)
+            var view = View;
+            if (view == null || view.IsDisposing) return;
+            if (view.VideoSize.Width == 0)
             {
-                View.VideoSize = new Size(VideoPlayer?.VideoWidth ?? 0, VideoPlayer?.VideoHeight ?? 0);
-                View.LoadCompleted.RaiseOn(Thread.Pool);
+                view.VideoSize = new Size(VideoPlayer?.VideoWidth ?? 0, VideoPlayer?.VideoHeight ?? 0);
+                view.LoadCompleted?.RaiseOn(Thread.Pool);
             }
         }
 
