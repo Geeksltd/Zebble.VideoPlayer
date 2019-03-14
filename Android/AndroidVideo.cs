@@ -93,7 +93,7 @@ namespace Zebble
         {
             View.IsReady = false;
             IsSurfaceCreated = false;
-            holder.Surface.Release();
+            holder?.Surface?.Release();
         }
 
         void HandleStateCommand(VideoState result)
@@ -166,10 +166,10 @@ namespace Zebble
         {
             if (disposing && VideoPlayer != null)
             {
-                VideoPlayer.Release();
-                VideoPlayer.Dispose();
                 VideoPlayer.Completion -= OnCompletion;
                 VideoPlayer.VideoSizeChanged -= OnVideoSizeChanged;
+                VideoPlayer.Release();
+                VideoPlayer.Dispose();
                 VideoPlayer = null;
             }
 
