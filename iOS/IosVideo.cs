@@ -121,10 +121,6 @@ namespace Zebble
             View.LoadCompleted.Raise();
         }
 
-        void SetStatusObserver()
-        {
-            PlayerItem.AddObserver(Self, "status", 0, IntPtr.Zero);
-        }
 
         void InitializePlayerItem()
         {
@@ -134,14 +130,15 @@ namespace Zebble
                 PlayerLayer = AVPlayerLayer.FromPlayer(QueuePlayer);
                 PlayerLooper = new AVPlayerLooper(QueuePlayer, PlayerItem, CoreMedia.CMTimeRange.InvalidRange);
 
-                SetStatusObserver();
+                OnReady();
+                View.IsReady = true;
             }
             else
             {
                 Player = new AVPlayer(PlayerItem);
                 PlayerLayer = AVPlayerLayer.FromPlayer(Player);
 
-                SetStatusObserver();
+                PlayerItem.AddObserver(Self, "status", 0, IntPtr.Zero);
             }
 
             PlayerLayer.VideoGravity = AVLayerVideoGravity.ResizeAspectFill;
@@ -228,7 +225,7 @@ namespace Zebble
 
         public override void ObserveValue(NSString keyPath, NSObject ofObject, NSDictionary change, IntPtr context)
         {
-            if(ofObject is AVPlayerItem item && keyPath == "status")
+            if (ofObject is AVPlayerItem item && keyPath == "status")
             {
                 if (item.Status == AVPlayerItemStatus.ReadyToPlay)
                 {
@@ -267,6 +264,7 @@ namespace Zebble
                 PlayerLayer?.Dispose();
                 PlayerLayer = null;
 
+                Prepared = null;
                 View = null;
             }
 
