@@ -8,52 +8,61 @@ namespace Zebble
     using System;
     using System.Threading.Tasks;
     using Zebble.Device;
+    using static Zebble.VideoPlayer;
 
     class AndroidVideo : RelativeLayout, ISurfaceHolderCallback, MediaPlayer.IOnPreparedListener
     {
+        VideoPlayer View;
+
         SurfaceView VideoSurface;
         MediaPlayer VideoPlayer;
+        Preparedhandler Prepared = new Preparedhandler();
+        bool IsSurfaceCreated;
 
-        VideoPlayer View;
-        bool surfaceCreated, isVideoCreatedDifferently;
-        readonly AsyncEvent SurfaceInitialized = new AsyncEvent();
-
-        public AndroidVideo(IntPtr handle, JniHandleOwnership transfer) : base(UIRuntime.CurrentActivity) => CreateMediaPlayer(null);
-
-        public AndroidVideo(VideoPlayer view) : base(UIRuntime.CurrentActivity) => CreateMediaPlayer(view);
-
-        void CreateMediaPlayer(VideoPlayer view)
+        public AndroidVideo(IntPtr handle, JniHandleOwnership transfer) : base(UIRuntime.CurrentActivity)
         {
-            if (view == null)
-            {
-                isVideoCreatedDifferently = true;
-                View = Zebble.VideoPlayer.Instance;
-            }
-            else Zebble.VideoPlayer.Instance = View = view;
-
-            var @params = CreateLayout();
-            CreateSurfceView();
-
-            VideoSurface.LayoutParameters = @params;
         }
 
-        LayoutParams CreateLayout()
+        public AndroidVideo(VideoPlayer view) : base(UIRuntime.CurrentActivity)
         {
-            var @params = new LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
-            @params.AddRule(LayoutRules.AlignParentTop);
-            @params.AddRule(LayoutRules.AlignParentBottom);
-            @params.AddRule(LayoutRules.AlignParentLeft);
-            @params.AddRule(LayoutRules.AlignParentRight);
+            View = view;
+            CreateSurfceView();
+            CreateVideoPlayer();
 
-            return @params;
+            View.Buffered.HandleOn(Thread.UI, () => VideoPlayer?.PrepareAsync());
+            View.PathChanged.HandleOn(Thread.UI, () => { if (View.AutoPlay) LoadVideo(); });
+            View.Started.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Play));
+            View.Paused.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Pause));
+            View.Resumed.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Play));
+            View.Stopped.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Stop));
+            View.SoughtBeginning.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.SeekToBegining));
+            Prepared.Handle(HandleStateCommand);
         }
 
         void CreateSurfceView()
         {
             VideoSurface = new SurfaceView(UIRuntime.CurrentActivity);
-            VideoSurface.SetBackgroundColor(Android.Graphics.Color.Transparent);
             VideoSurface.Holder.AddCallback(this);
+            VideoSurface.LayoutParameters = CreateLayout();
             AddView(VideoSurface);
+        }
+
+        void CreateVideoPlayer()
+        {
+            VideoPlayer = new MediaPlayer { Looping = View.Loop };
+            VideoPlayer.SetOnPreparedListener(this);
+            VideoPlayer.Completion += OnCompletion;
+            VideoPlayer.VideoSizeChanged += OnVideoSizeChanged;
+        }
+
+        LayoutParams CreateLayout()
+        {
+            var result = new LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
+            result.AddRule(LayoutRules.AlignParentTop);
+            result.AddRule(LayoutRules.AlignParentBottom);
+            result.AddRule(LayoutRules.AlignParentLeft);
+            result.AddRule(LayoutRules.AlignParentRight);
+            return result;
         }
 
         public override ViewStates Visibility
@@ -62,128 +71,111 @@ namespace Zebble
             set
             {
                 if (value == ViewStates.Visible)
-                {
                     LayoutParameters = View.GetFrame();
-                }
                 else if (value == ViewStates.Invisible || value == ViewStates.Gone)
-                {
                     LayoutParameters = new FrameLayout.LayoutParams(0, 0);
-                }
+            }
+        }
+
+        public void SurfaceChanged(ISurfaceHolder holder, [GeneratedEnum] Format format, int width, int height) { }
+
+        public void SurfaceCreated(ISurfaceHolder holder)
+        {
+            IsSurfaceCreated = holder.Surface?.IsValid == true;
+
+            VideoPlayer.SetDisplay(VideoSurface.Holder);
+
+            if (View.AutoPlay && IsSurfaceCreated)
+                LoadVideo();
+        }
+
+        public void SurfaceDestroyed(ISurfaceHolder holder)
+        {
+            View.IsReady = false;
+            IsSurfaceCreated = false;
+            holder?.Surface?.Release();
+        }
+
+        void HandleStateCommand(VideoState result)
+        {
+            switch (result)
+            {
+                case VideoState.Play:
+                    LoadVideo();
+                    break;
+                case VideoState.Pause:
+                    if (VideoPlayer.IsPlaying) VideoPlayer.Pause();
+                    break;
+                case VideoState.Stop:
+                    VideoPlayer.Stop();
+                    VideoPlayer.Reset();
+                    break;
+                case VideoState.SeekToBegining:
+                    VideoPlayer.Reset();
+                    break;
+                default: break;
+            }
+        }
+
+        public void OnPrepared(MediaPlayer mp)
+        {
+            VideoPlayer.SetVideoScalingMode(VideoScalingMode.ScaleToFitWithCropping);
+            View.IsReady = true;
+            if (View.AutoPlay) mp.Start();
+        }
+
+        void LoadVideo()
+        {
+            var path = View.Path;
+            if (path.LacksValue()) return;
+
+            if (!IsSurfaceCreated)
+            {
+                Log.Error("Surface is not created when LoadVideo is called!!");
+                return;
+            }
+
+            if (IO.IsAbsolute(path)) path = "file://" + path;
+            else if (!path.IsUrl()) path = IO.AbsolutePath(path);
+
+            try
+            {
+                VideoPlayer.SetDataSource(path);
+
+                if (!path.IsUrl() || View.AutoBuffer)
+                    VideoPlayer.PrepareAsync();
+            }
+            catch (Java.Lang.Exception ex)
+            {
+                Log.Error("This error is raised without seemingly affecting anything! " + ex.Message);
+            }
+        }
+
+        async void OnCompletion(object e, EventArgs args) => await View.FinishedPlaying.RaiseOn(Thread.Pool);
+
+        void OnVideoSizeChanged(object e, EventArgs args)
+        {
+            var view = View;
+            if (view == null || view.IsDisposing) return;
+            if (view.VideoSize.Width == 0)
+            {
+                view.VideoSize = new Size(VideoPlayer?.VideoWidth ?? 0, VideoPlayer?.VideoHeight ?? 0);
+                view.LoadCompleted?.RaiseOn(Thread.Pool);
             }
         }
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing)
+            if (disposing && VideoPlayer != null)
             {
-                if (VideoPlayer != null)
-                {
-                    VideoPlayer.Release();
-                    VideoPlayer = null;
-                }
+                VideoPlayer.Completion -= OnCompletion;
+                VideoPlayer.VideoSizeChanged -= OnVideoSizeChanged;
+                VideoPlayer.Release();
+                VideoPlayer.Dispose();
+                VideoPlayer = null;
             }
 
             base.Dispose(disposing);
-        }
-
-        public void SurfaceChanged(ISurfaceHolder holder, [GeneratedEnum] Format format, int width, int height)
-        {
-        }
-
-        public void SurfaceCreated(ISurfaceHolder holder)
-        {
-            var surface = holder.Surface;
-
-            if (surface == null || !surface.IsValid) surfaceCreated = false;
-            else surfaceCreated = true;
-
-            StartVideo().RunInParallel();
-        }
-
-        public void SurfaceDestroyed(ISurfaceHolder holder)
-        {
-            surfaceCreated = false;
-            holder.Surface.Release();
-        }
-
-        public void OnPrepared(MediaPlayer mp)
-        {
-            if (View.AutoPlay)
-                mp.Start();
-        }
-
-        Task StartVideo()
-        {
-            if (surfaceCreated == false && isVideoCreatedDifferently == false) return Task.CompletedTask;
-            else if (surfaceCreated == false && isVideoCreatedDifferently)
-            {
-                CreateSurfceView();
-                var @params = CreateLayout();
-                VideoSurface.LayoutParameters = @params;
-            }
-
-            if (VideoPlayer == null)
-            {
-                try
-                {
-                    VideoPlayer = new MediaPlayer();
-                    VideoPlayer.SetDisplay(VideoSurface.Holder);
-                }
-                catch { }
-            }
-
-            if (View.PathChanged.HandlersCount == 0)
-            {
-                View.PathChanged.HandleOn(Thread.UI, () => StartVideo());
-                View.Started.HandleOn(Thread.UI, () => Play());
-                View.Paused.HandleOn(Thread.UI, () => Pause());
-                View.Resumed.HandleOn(Thread.UI, () => Play());
-                View.Stopped.HandleOn(Thread.UI, () => Stop());
-                View.SoughtBeginning.HandleOn(Thread.UI, () => SeekBeginning());
-
-                VideoPlayer.Completion += (e, args) => View.FinishedPlaying.RaiseOn(Thread.UI);
-                VideoPlayer.VideoSizeChanged += (e, args) =>
-                {
-                    if (View.VideoSize.Width == 0)
-                    {
-                        View.VideoSize = new Size(VideoPlayer.VideoWidth, VideoPlayer.VideoHeight);
-                        View.LoadCompleted.Raise();
-                    }
-                };
-            }
-
-            try
-            {
-                VideoPlayer.SetDataSource(View.Path);
-                VideoPlayer.SetVideoScalingMode(VideoScalingMode.ScaleToFitWithCropping);
-                VideoPlayer.SetOnPreparedListener(this);
-                VideoPlayer.Looping = View.Loop;
-                VideoPlayer.PrepareAsync();
-            }
-            catch (Java.Lang.Exception ex)
-            {
-                Log.Error(ex.ToFullMessage());
-            }
-
-            return Task.CompletedTask;
-        }
-
-        void Play() => VideoPlayer.Start();
-
-        void Pause()
-        {
-            if (VideoPlayer.IsPlaying)
-                VideoPlayer.Pause();
-            else
-                Stop();
-        }
-
-        void SeekBeginning() => VideoPlayer.SeekTo(0);
-
-        void Stop()
-        {
-            VideoPlayer.Pause();
-            VideoPlayer.SeekTo(0);
         }
     }
 }

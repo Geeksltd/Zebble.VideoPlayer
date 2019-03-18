@@ -17,6 +17,7 @@ namespace Zebble
         public UWPVideoViewer(VideoPlayer view)
         {
             View = view;
+            view.Buffered.HandleOn(Thread.UI, BufferVideo);
             View.PathChanged.HandleOn(Thread.UI, LoadVideo);
             View.Started.HandleOn(Thread.UI, () => Result.Play());
             View.Paused.HandleOn(Thread.UI, () => Result.Pause());
@@ -49,11 +50,12 @@ namespace Zebble
         async Task DoLoadVideo()
         {
             var url = View.Path;
+            if (string.IsNullOrEmpty(url)) return;
 
             if (url.IsUrl())
             {
-                Result.Source = url.AsUri();
-                View.VideoSize = await GetVideoSize(source: url.AsUri());
+                if (View.AutoBuffer)
+                    await BufferVideo();
             }
             else
             {
@@ -76,6 +78,21 @@ namespace Zebble
             Result.IsLooping = View.Loop;
 
             Result.Loaded += (e, args) => View.LoadCompleted.Raise();
+        }
+
+        void Result_BufferingProgressChanged(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        {
+            View.IsReady = true;
+        }
+
+        async Task BufferVideo()
+        {
+            var url = View.Path;
+            if (string.IsNullOrEmpty(url)) return;
+
+            Result.Source = url.AsUri();
+            Result.BufferingProgressChanged += Result_BufferingProgressChanged;
+            View.VideoSize = await GetVideoSize(source: url.AsUri());
         }
 
         async Task<Size> GetVideoSize(Uri source = null, FileInfo file = null)
