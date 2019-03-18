@@ -288,3 +288,4 @@ __pycache__/
 *.xsd.cs
 lib
 GCopReport.json
+Zebble.exe
