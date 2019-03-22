@@ -119,7 +119,7 @@
       <Version>9.0.1</Version>
     </PackageReference>
     <PackageReference Include="Zebble">
-      <Version>4.4.178</Version>
+      <Version>4.4.185</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="..\Shared\Shared.projitems" Label="Shared" Condition="Exists('..\Shared\Shared.projitems')" />
