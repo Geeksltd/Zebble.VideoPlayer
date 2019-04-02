@@ -6,7 +6,6 @@ namespace Zebble
     using Android.Views;
     using Android.Widget;
     using System;
-    using System.Threading.Tasks;
     using Zebble.Device;
     using static Zebble.VideoPlayer;
 
@@ -140,6 +139,7 @@ namespace Zebble
 
             try
             {
+                VideoPlayer.Reset();
                 VideoPlayer.SetDataSource(path);
 
                 if (!path.IsUrl() || View.AutoBuffer)

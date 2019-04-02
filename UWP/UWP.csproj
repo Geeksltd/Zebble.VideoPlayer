@@ -141,12 +141,7 @@
     <Error Condition="!Exists('..\Shared\Shared.projitems')" Text="This project references Shared that are missing on this computer." />
   </Target>
   <PropertyGroup>
-    <PostBuildEvent>if $(PlatformName) == x86 (
-if not exist $(SolutionDir)lib\bin\Release mkdir $(SolutionDir)lib\bin\Release
-
-robocopy  $(SolutionDir)lib\bin\x86\Release $(SolutionDir)lib\bin\Release /COPYALL /E
-
-$(SolutionDir)Shared\NuGet\CorFlags.exe /32bitreq- $(SolutionDir)lib\bin\Release\Zebble.VideoPlayer.UWP.dll
-)</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
 </Project>
