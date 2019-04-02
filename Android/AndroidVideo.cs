@@ -104,14 +104,14 @@ namespace Zebble
                     LoadVideo();
                     break;
                 case VideoState.Pause:
-                    if (VideoPlayer.IsPlaying) VideoPlayer.Pause();
+                    if (VideoPlayer?.IsPlaying == true) VideoPlayer.Pause();
                     break;
                 case VideoState.Stop:
-                    VideoPlayer.Stop();
-                    VideoPlayer.Reset();
+                    VideoPlayer?.Stop();
+                    VideoPlayer?.Reset();
                     break;
                 case VideoState.SeekToBegining:
-                    VideoPlayer.Reset();
+                    VideoPlayer?.Reset();
                     break;
                 default: break;
             }
