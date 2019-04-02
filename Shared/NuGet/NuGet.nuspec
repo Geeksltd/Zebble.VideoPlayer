@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
   <metadata>
     <id>Zebble.VideoPlayer</id>
-    <version>4.2.388</version>
+    <version>4.2.390</version>
     <title>Video Player for Zebble (Xamarin)</title>
     <description>Native video player plugin for Zebble.</description>
     <projectUrl>https://github.com/Geeksltd/Zebble.VideoPlayer</projectUrl>
@@ -17,6 +17,6 @@
     <file src="..\..\lib\bin\ARM\Release\Zebble.VideoPlayer.UWP.*" target="runtimes\win10-arm\lib\uap10.0" />
     <file src="..\..\lib\bin\x64\Release\Zebble.VideoPlayer.UWP.*" target="runtimes\win10-x64\lib\uap10.0" />
     <file src="..\..\lib\bin\x86\Release\Zebble.VideoPlayer.UWP.*" target="runtimes\win10-x86\lib\uap10.0" />
-    <file src="..\..\lib\bin\Release\Zebble.VideoPlayer.UWP.*" target="ref\uap10.0" />
+    <file src="..\..\lib\Zebble.VideoPlayer.UWP.*" target="ref\uap10.0" />
   </files>
 </package>
