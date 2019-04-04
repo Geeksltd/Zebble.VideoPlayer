@@ -48,7 +48,7 @@ namespace Zebble
 
         void CreateVideoPlayer()
         {
-            VideoPlayer = new MediaPlayer { Looping = View.Loop };
+            VideoPlayer = new MediaPlayer();
             VideoPlayer.SetOnPreparedListener(this);
             VideoPlayer.Completion += OnCompletion;
             VideoPlayer.VideoSizeChanged += OnVideoSizeChanged;
@@ -141,6 +141,7 @@ namespace Zebble
             {
                 VideoPlayer.Reset();
                 VideoPlayer.SetDataSource(path);
+                VideoPlayer.Looping = View.Loop;
 
                 if (!path.IsUrl() || View.AutoBuffer)
                     VideoPlayer.PrepareAsync();
