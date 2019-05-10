@@ -16,7 +16,6 @@ namespace Zebble
         {
             View = view;
             Completion += OnCompletion;
-            LayoutParameters = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
 
             view.Started.HandleOn(Thread.UI, () => SafeInvoke(Start));
             view.Paused.HandleOn(Thread.UI, () => SafeInvoke(Pause));
@@ -55,7 +54,13 @@ namespace Zebble
         async void OnCompletion(object e, EventArgs args)
         {
             if (IsDead(out var view)) return;
-            await view.FinishedPlaying.RaiseOn(Thread.Pool);
+
+            if (view.Loop)
+            {
+                SeekTo(0);
+                Start();
+            }
+            else await view.FinishedPlaying.RaiseOn(Thread.Pool);
         }
 
         protected override void OnSizeChanged(int w, int h, int oldw, int oldh)
