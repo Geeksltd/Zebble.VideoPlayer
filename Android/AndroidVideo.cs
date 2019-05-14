@@ -16,7 +16,8 @@ namespace Zebble
         SurfaceView VideoSurface;
         MediaPlayer VideoPlayer;
         Preparedhandler Prepared = new Preparedhandler();
-        bool IsSurfaceCreated;
+        Preparedhandler VideoSurfaceCreate = new Preparedhandler();
+        bool IsSurfaceCreated, IsVideoBuffered;
 
         public AndroidVideo(IntPtr handle, JniHandleOwnership transfer) : base(UIRuntime.CurrentActivity) { }
 
@@ -26,9 +27,9 @@ namespace Zebble
             CreateSurfceView();
             CreateVideoPlayer();
 
-            View.Buffered.HandleOn(Thread.UI, () => SafeInvoke(VideoPlayer.PrepareAsync));
+            View.Buffered.HandleOn(Thread.UI, () => SafeInvoke(() => { VideoPlayer.PrepareAsync(); IsVideoBuffered = true; }));
             View.PathChanged.HandleOn(Thread.UI, () => SafeInvoke(() => { if (View.AutoPlay) LoadVideo(); }));
-            View.Started.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Play)));
+            View.Started.HandleOn(Thread.UI, () => SafeInvoke(OnVideoStart));
             View.Paused.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Pause)));
             View.Resumed.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Play)));
             View.Stopped.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Stop)));
@@ -71,8 +72,8 @@ namespace Zebble
 
             VideoPlayer.SetDisplay(VideoSurface.Holder);
 
-            if (View.AutoPlay && IsSurfaceCreated)
-                LoadVideo();
+            if (IsSurfaceCreated) VideoSurfaceCreate.Handle(state => LoadVideo());
+            if (View.AutoPlay && IsSurfaceCreated) LoadVideo();
         }
 
         public void SurfaceDestroyed(ISurfaceHolder holder)
@@ -111,7 +112,15 @@ namespace Zebble
             mp.Looping = View.Loop;
             View.IsReady = true;
 
-            if (View.AutoPlay) mp.Start();
+            if (view.AutoBuffer) mp.Start();
+        }
+
+        void OnVideoStart()
+        {
+            if (IsDead(out var view)) return;
+
+            if (IsVideoBuffered) VideoPlayer.Start();
+            else Prepared.Raise(VideoState.Play).GetAwaiter();
         }
 
         void LoadVideo()
@@ -123,7 +132,7 @@ namespace Zebble
 
             if (!IsSurfaceCreated)
             {
-                Log.Error("Surface is not created when LoadVideo is called!!");
+                VideoSurfaceCreate.Raise(VideoState.Play);
                 return;
             }
 
