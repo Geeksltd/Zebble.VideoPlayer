@@ -1,10 +1,14 @@
 namespace Zebble
 {
+    using Android.Runtime;
     using System.Threading.Tasks;
 
     class VideoPlayerRenderer : INativeRenderer
     {
         AndroidVideo Result;
+
+        [Preserve]
+        public VideoPlayerRenderer() { }
 
         public Task<Android.Views.View> Render(Renderer renderer)
         {
