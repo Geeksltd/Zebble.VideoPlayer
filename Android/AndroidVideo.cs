@@ -19,6 +19,7 @@ namespace Zebble
         Preparedhandler VideoSurfaceCreate = new Preparedhandler();
         bool IsSurfaceCreated, IsVideoBuffered;
 
+        [Preserve]
         public AndroidVideo(IntPtr handle, JniHandleOwnership transfer) : base(UIRuntime.CurrentActivity) { }
 
         public AndroidVideo(VideoPlayer view) : base(UIRuntime.CurrentActivity)
@@ -63,10 +64,9 @@ namespace Zebble
             return result;
         }
 
+        void ISurfaceHolderCallback.SurfaceChanged(ISurfaceHolder holder, [GeneratedEnum] Format format, int width, int height) { }
 
-        public void SurfaceChanged(ISurfaceHolder holder, [GeneratedEnum] Format format, int width, int height) { }
-
-        public void SurfaceCreated(ISurfaceHolder holder)
+        void ISurfaceHolderCallback.SurfaceCreated(ISurfaceHolder holder)
         {
             IsSurfaceCreated = holder.Surface?.IsValid == true;
 
@@ -76,7 +76,7 @@ namespace Zebble
             if (View.AutoPlay && IsSurfaceCreated) LoadVideo();
         }
 
-        public void SurfaceDestroyed(ISurfaceHolder holder)
+        void ISurfaceHolderCallback.SurfaceDestroyed(ISurfaceHolder holder)
         {
             View.IsReady = false;
             IsSurfaceCreated = false;
@@ -104,11 +104,13 @@ namespace Zebble
             }
         }
 
-        public void OnPrepared(MediaPlayer mp)
+        void MediaPlayer.IOnPreparedListener.OnPrepared(MediaPlayer mp)
         {
             if (IsDead(out var view)) return;
 
-            mp.SetVideoScalingMode(VideoScalingMode.ScaleToFitWithCropping);
+            try { mp.SetVideoScalingMode(VideoScalingMode.ScaleToFitWithCropping); }
+            catch (Exception ex) { Log.Error(ex); }
+
             mp.Looping = View.Loop;
             View.IsReady = true;
 
