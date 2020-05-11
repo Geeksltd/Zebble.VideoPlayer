@@ -68,17 +68,21 @@ namespace Zebble
 
         void ISurfaceHolderCallback.SurfaceCreated(ISurfaceHolder holder)
         {
+            if (IsDead(out var view)) return;
+
             IsSurfaceCreated = holder.Surface?.IsValid == true;
 
             VideoPlayer.SetDisplay(VideoSurface.Holder);
 
             if (IsSurfaceCreated) VideoSurfaceCreate.Handle(state => LoadVideo());
-            if (View.AutoPlay && IsSurfaceCreated) LoadVideo();
+            if (view.AutoPlay && IsSurfaceCreated) LoadVideo();
         }
 
         void ISurfaceHolderCallback.SurfaceDestroyed(ISurfaceHolder holder)
         {
-            View.IsReady = false;
+            if (IsDead(out var view)) return;
+
+            view.IsReady = false;
             IsSurfaceCreated = false;
             holder?.Surface?.Release();
         }
@@ -111,8 +115,8 @@ namespace Zebble
             try { mp.SetVideoScalingMode(VideoScalingMode.ScaleToFitWithCropping); }
             catch (Exception ex) { Log.Error(ex); }
 
-            mp.Looping = View.Loop;
-            View.IsReady = true;
+            mp.Looping = view.Loop;
+            view.IsReady = true;
 
             if (view.AutoBuffer) mp.Start();
         }
@@ -145,7 +149,7 @@ namespace Zebble
                 VideoPlayer.Reset();
                 VideoPlayer.SetDataSource(Renderer.Context, Android.Net.Uri.Parse(source));
 
-                if (source.IsUrl() || View.AutoBuffer)
+                if (source.IsUrl() || view.AutoBuffer)
                     VideoPlayer.PrepareAsync();
             }
             catch (Java.Lang.Exception ex)
@@ -165,7 +169,7 @@ namespace Zebble
         async void OnCompletion(object sender, EventArgs args)
         {
             if (IsDead(out var view)) return;
-            await View.FinishedPlaying.RaiseOn(Thread.Pool);
+            await view.FinishedPlaying.RaiseOn(Thread.Pool);
         }
 
         void OnVideoSizeChanged(object sender, EventArgs args)
