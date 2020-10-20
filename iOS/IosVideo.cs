@@ -35,6 +35,7 @@ namespace Zebble
             View.Resumed.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Resume));
             View.Stopped.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Stop));
             View.SoughtBeginning.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.SeekToBegining));
+            View.Muted.HandleOn(Thread.UI, () => Mute());
 
             NSNotificationCenter.DefaultCenter.AddObserver(AVPlayerItem.DidPlayToEndTimeNotification, (notify) =>
             {
@@ -51,6 +52,14 @@ namespace Zebble
 
             Frame = frame;
             PlayerLayer.Frame = Bounds;
+        }
+
+        void Mute()
+        {
+            if (View.Loop)
+                QueuePlayer.Muted = View.IsMuted;
+            else
+                Player.Muted = View.IsMuted;
         }
 
         void Resume()

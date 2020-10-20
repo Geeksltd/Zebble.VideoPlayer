@@ -35,6 +35,8 @@ namespace Zebble
             View.Resumed.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Play)));
             View.Stopped.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Stop)));
             View.SoughtBeginning.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.SeekToBegining)));
+            View.Muted.HandleOn(Thread.UI, () => Mute());
+
             Prepared.Handle(HandleStateCommand);
         }
 
@@ -119,6 +121,9 @@ namespace Zebble
             view.IsReady = true;
 
             if (view.AutoBuffer) mp.Start();
+
+            if (view.IsMuted) mp.SetVolume(0, 0);
+            else mp.SetVolume(1, 1);
         }
 
         void OnVideoStart()
@@ -170,6 +175,14 @@ namespace Zebble
         {
             if (IsDead(out var view)) return;
             await view.FinishedPlaying.RaiseOn(Thread.Pool);
+        }
+
+        void Mute()
+        {
+            if (View.IsMuted)
+                VideoPlayer.SetVolume(0, 0);
+            else 
+                VideoPlayer.SetVolume(1, 1);
         }
 
         void OnVideoSizeChanged(object sender, EventArgs args)

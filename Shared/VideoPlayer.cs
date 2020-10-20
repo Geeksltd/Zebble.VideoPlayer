@@ -6,7 +6,7 @@ namespace Zebble
 {
     public partial class VideoPlayer : View, IRenderedBy<VideoPlayerRenderer>
     {
-        string path;
+        string path; bool isMute;
         internal readonly AsyncEvent PathChanged = new AsyncEvent();
         internal readonly AsyncEvent Started = new AsyncEvent();
         internal readonly AsyncEvent Paused = new AsyncEvent();
@@ -14,6 +14,7 @@ namespace Zebble
         internal readonly AsyncEvent Stopped = new AsyncEvent();
         internal readonly AsyncEvent SoughtBeginning = new AsyncEvent();
         internal readonly AsyncEvent Buffered = new AsyncEvent();
+        internal readonly AsyncEvent Muted = new AsyncEvent();
 
         internal static VideoPlayer Instance;
 
@@ -30,6 +31,17 @@ namespace Zebble
                 if (path == value) return;
                 path = value;
                 PathChanged.Raise();
+            }
+        }
+
+        public bool IsMuted
+        {
+            get => isMute;
+            set
+            {
+                if (isMute == value) return;
+                isMute = value;
+                Muted.Raise();
             }
         }
 
