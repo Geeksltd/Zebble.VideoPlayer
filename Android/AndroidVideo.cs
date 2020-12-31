@@ -1,3 +1,4 @@
+
 namespace Zebble
 {
     using Android.Graphics;
@@ -8,6 +9,8 @@ namespace Zebble
     using System;
     using Zebble.Device;
     using static Zebble.VideoPlayer;
+    using Olive;
+    using Log = Zebble.Device.Log;
 
     class AndroidVideo : RelativeLayout, ISurfaceHolderCallback, MediaPlayer.IOnPreparedListener
     {
@@ -139,7 +142,7 @@ namespace Zebble
             if (IsDead(out var view)) return;
 
             var source = view.Path;
-            if (source.LacksValue()) return;
+            if (source.IsEmpty()) return;
 
             if (!IsSurfaceCreated)
             {

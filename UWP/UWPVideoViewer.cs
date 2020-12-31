@@ -8,6 +8,7 @@ namespace Zebble
     using Windows.Storage;
     using controls = Windows.UI.Xaml.Controls;
     using media = Windows.UI.Xaml.Media;
+    using Olive;
 
     class UWPVideoViewer
     {

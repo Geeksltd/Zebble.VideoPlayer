@@ -6,6 +6,7 @@ namespace Zebble
     using System.Linq;
     using UIKit;
     using static Zebble.VideoPlayer;
+    using Olive;
 
     class IosVideo : UIView
     {
