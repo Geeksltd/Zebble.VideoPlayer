@@ -7,7 +7,7 @@
     <RootNamespace>Zebble</RootNamespace>
     <PackageId>Zebble.VideoPlayer</PackageId>
     <Product>$(AssemblyName) ($(TargetFramework))</Product>
-    <Version>4.2.402.0</Version>
+    <Version>4.2.403.0</Version>
     <PackOnBuild>true</PackOnBuild>
     <NeutralLanguage>en</NeutralLanguage>
     <LangVersion>default</LangVersion>
@@ -65,7 +65,7 @@
     <None Remove="Zebble-LicenseAgreement.txt" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Zebble" Version="4.5.423" />
+    <PackageReference Include="Zebble" Version="4.5.429" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Android\" />
