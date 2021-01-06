@@ -26,17 +26,17 @@ namespace Zebble
         {
             View = view;
 
-            view.Width.Changed.HandleOn(Thread.UI, () => OnFrameChanged());
-            view.Height.Changed.HandleOn(Thread.UI, () => OnFrameChanged());
+            view.Width.Changed.HandleOn(Thread.UI, OnFrameChanged);
+            view.Height.Changed.HandleOn(Thread.UI, OnFrameChanged);
 
-            View.Buffered.HandleOn(Thread.UI, () => BufferVideo());
-            View.PathChanged.HandleOn(Thread.UI, () => LoadVideo());
+            View.Buffered.HandleOn(Thread.UI, BufferVideo);
+            View.PathChanged.HandleOn(Thread.UI, LoadVideo);
             View.Started.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Play));
             View.Paused.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Pause));
             View.Resumed.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Resume));
             View.Stopped.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Stop));
             View.SoughtBeginning.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.SeekToBegining));
-            View.Muted.HandleOn(Thread.UI, () => Mute());
+            View.Muted.HandleOn(Thread.UI, Mute);
 
             NSNotificationCenter.DefaultCenter.AddObserver(AVPlayerItem.DidPlayToEndTimeNotification, (notify) =>
             {
@@ -104,7 +104,7 @@ namespace Zebble
         void LoadVideo()
         {
             string url = View.Path;
-            if (string.IsNullOrEmpty(url)) return;
+            if (url.IsEmpty()) return;
 
             if (url.IsUrl())
             {
@@ -160,7 +160,7 @@ namespace Zebble
         void BufferVideo()
         {
             string url = View.Path;
-            if (string.IsNullOrEmpty(url)) return;
+            if (url.IsEmpty()) return;
 
             UIGraphics.BeginImageContext(new CoreGraphics.CGSize(1, 1));
 
@@ -221,7 +221,7 @@ namespace Zebble
             if (asset == null) tracks = urlAsset.TracksWithMediaType(AVMediaType.Video);
             else tracks = asset.TracksWithMediaType(AVMediaType.Video);
 
-            if (!tracks.Any()) return;
+            if (tracks.None()) return;
 
             var track = tracks.First();
 

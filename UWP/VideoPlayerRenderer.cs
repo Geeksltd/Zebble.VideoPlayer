@@ -1,6 +1,5 @@
 namespace Zebble
 {
-    using System.ComponentModel;
     using System.Threading.Tasks;
     using Windows.UI.Xaml;
 

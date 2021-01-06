@@ -45,14 +45,14 @@ namespace Zebble
             }
             catch (Exception ex)
             {
-                await Alert.Toast("Faield to play video: " + ex.Message);
+                await Alert.Toast("Failed to play video: " + ex.Message);
             }
         }
 
         async Task DoLoadVideo()
         {
             var url = View.Path;
-            if (string.IsNullOrEmpty(url)) return;
+            if (url.IsEmpty()) return;
 
             if (url.IsUrl())
             {
@@ -90,7 +90,7 @@ namespace Zebble
         async Task BufferVideo()
         {
             var url = View.Path;
-            if (string.IsNullOrEmpty(url)) return;
+            if (url.IsEmpty()) return;
 
             Result.Source = url.AsUri();
             Result.BufferingProgressChanged += Result_BufferingProgressChanged;

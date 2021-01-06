@@ -1,4 +1,3 @@
-
 namespace Zebble
 {
     using Android.Graphics;
@@ -8,9 +7,9 @@ namespace Zebble
     using Android.Widget;
     using System;
     using Zebble.Device;
+    using Log = Zebble.Device.Log;
     using static Zebble.VideoPlayer;
     using Olive;
-    using Log = Zebble.Device.Log;
 
     class AndroidVideo : RelativeLayout, ISurfaceHolderCallback, MediaPlayer.IOnPreparedListener
     {
@@ -28,7 +27,7 @@ namespace Zebble
         public AndroidVideo(VideoPlayer view) : base(UIRuntime.CurrentActivity)
         {
             View = view;
-            CreateSurfceView();
+            CreateSurfaceView();
             CreateVideoPlayer();
 
             View.Buffered.HandleOn(Thread.UI, () => SafeInvoke(() => { VideoPlayer.PrepareAsync(); IsVideoBuffered = true; }));
@@ -38,12 +37,12 @@ namespace Zebble
             View.Resumed.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Play)));
             View.Stopped.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Stop)));
             View.SoughtBeginning.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.SeekToBegining)));
-            View.Muted.HandleOn(Thread.UI, () => Mute());
+            View.Muted.HandleOn(Thread.UI, Mute);
 
             Prepared.Handle(HandleStateCommand);
         }
 
-        void CreateSurfceView()
+        void CreateSurfaceView()
         {
             VideoSurface = new SurfaceView(UIRuntime.CurrentActivity);
             VideoSurface.Holder.AddCallback(this);
@@ -79,8 +78,12 @@ namespace Zebble
 
             VideoPlayer.SetDisplay(VideoSurface.Holder);
 
-            if (IsSurfaceCreated) VideoSurfaceCreate.Handle(state => LoadVideo());
-            if (view.AutoPlay && IsSurfaceCreated) LoadVideo();
+            if (IsSurfaceCreated)
+            {
+                VideoSurfaceCreate.Handle(_ => LoadVideo());
+
+                if (view.AutoPlay) LoadVideo();
+            }
         }
 
         void ISurfaceHolderCallback.SurfaceDestroyed(ISurfaceHolder holder)
@@ -131,7 +134,7 @@ namespace Zebble
 
         void OnVideoStart()
         {
-            if (IsDead(out var view)) return;
+            if (IsDead(out _)) return;
 
             if (IsVideoBuffered) VideoPlayer.Start();
             else Prepared.Raise(VideoState.Play).GetAwaiter();
@@ -168,7 +171,7 @@ namespace Zebble
 
         void SafeInvoke(Action action)
         {
-            if (IsDead(out var view)) return;
+            if (IsDead(out _)) return;
 
             try { action(); }
             catch (Exception ex) { Log.Error(ex); }
@@ -184,7 +187,7 @@ namespace Zebble
         {
             if (View.IsMuted)
                 VideoPlayer.SetVolume(0, 0);
-            else 
+            else
                 VideoPlayer.SetVolume(1, 1);
         }
 
