@@ -2,7 +2,6 @@ namespace Zebble
 {
     using System.Threading.Tasks;
     using Windows.UI.Xaml;
-    using Olive;
 
     class VideoPlayerRenderer : INativeRenderer
     {
@@ -10,8 +9,8 @@ namespace Zebble
 
         public Task<FrameworkElement> Render(Renderer renderer)
         {
-            return new UWPVideoViewer((VideoPlayer)renderer.View).Render()
-                .ContinueWith(x => Result = x.GetAlreadyCompletedResult());
+            Result = new UWPVideoViewer((VideoPlayer)renderer.View).Render().GetAwaiter().GetResult();
+            return Task.FromResult(Result);
         }
 
         public void Dispose() => Result = null;
