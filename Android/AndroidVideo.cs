@@ -7,7 +7,6 @@ namespace Zebble
     using Android.Widget;
     using System;
     using Zebble.Device;
-    using Log = Zebble.Device.Log;
     using static Zebble.VideoPlayer;
     using Olive;
 
@@ -121,7 +120,7 @@ namespace Zebble
             if (IsDead(out var view)) return;
 
             try { mp.SetVideoScalingMode(VideoScalingMode.ScaleToFitWithCropping); }
-            catch (Exception ex) { Log.Error(ex); }
+            catch (Exception ex) { Log.For(this).Error(ex); }
 
             mp.Looping = view.Loop;
             view.IsReady = true;
@@ -165,7 +164,7 @@ namespace Zebble
             }
             catch (Java.Lang.Exception ex)
             {
-                Log.Error("This error is raised without seemingly affecting anything! " + ex.Message);
+                Log.For(this).Error(ex, "This error is raised without seemingly affecting anything!");
             }
         }
 
@@ -174,7 +173,7 @@ namespace Zebble
             if (IsDead(out _)) return;
 
             try { action(); }
-            catch (Exception ex) { Log.Error(ex); }
+            catch (Exception ex) { Log.For(this).Error(ex); }
         }
 
         async void OnCompletion(object sender, EventArgs args)
