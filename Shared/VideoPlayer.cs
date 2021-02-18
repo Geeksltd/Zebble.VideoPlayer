@@ -14,9 +14,7 @@ namespace Zebble
         internal readonly AsyncEvent Stopped = new AsyncEvent();
         internal readonly AsyncEvent SoughtBeginning = new AsyncEvent();
         internal readonly AsyncEvent Buffered = new AsyncEvent();
-        internal readonly AsyncEvent Muted = new AsyncEvent();
-
-        internal static VideoPlayer Instance;
+        internal readonly AsyncEvent<VideoPlayer> Muted = new AsyncEvent<VideoPlayer>();
 
         public readonly AsyncEvent FinishedPlaying = new AsyncEvent();
         public readonly AsyncEvent LoadCompleted = new AsyncEvent();
@@ -41,7 +39,7 @@ namespace Zebble
             {
                 if (isMute == value) return;
                 isMute = value;
-                Muted.Raise();
+                Muted.Raise(this);
             }
         }
 

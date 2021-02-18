@@ -182,9 +182,10 @@ namespace Zebble
             await view.FinishedPlaying.RaiseOn(Thread.Pool);
         }
 
-        void Mute()
+        void Mute(VideoPlayer currentView)
         {
-            if (View.IsMuted)
+            if (IsDead(out var view)) view = currentView;
+            if (view.IsMuted)
                 VideoPlayer.SetVolume(0, 0);
             else
                 VideoPlayer.SetVolume(1, 1);
