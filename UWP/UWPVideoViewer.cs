@@ -99,7 +99,6 @@ namespace Zebble
 
         async Task<Size> GetVideoSize(Uri source = null, FileInfo file = null)
         {
-            TimeSpan timeOfFrame = new TimeSpan(0, 0, 1);
             StorageFile currentFile;
 
             if (source != null)
@@ -114,14 +113,15 @@ namespace Zebble
                 currentFile = await file.ToStorageFile();
             }
 
-            var encodingPropertiesToRetrieve = new List<string>();
-            encodingPropertiesToRetrieve.Add("System.Video.FrameHeight");
-            encodingPropertiesToRetrieve.Add("System.Video.FrameWidth");
-            var encodingProperties = await currentFile.Properties.RetrievePropertiesAsync(encodingPropertiesToRetrieve);
-            uint frameHeight = (uint)encodingProperties["System.Video.FrameHeight"];
-            uint frameWidth = (uint)encodingProperties["System.Video.FrameWidth"];
+            const string HEIGHT = "System.Video.FrameHeight";
+            const string WIDTH = "System.Video.FrameWidth";
 
-            return new Size(frameWidth, frameHeight);
+            var properties = await currentFile.Properties.RetrievePropertiesAsync(new[] { HEIGHT, WIDTH });
+            if (properties is null) return new Size(0, 0);
+
+            int val(string key) => properties?[key].ToStringOrEmpty().TryParseAs<int>() ?? 0;
+
+            return new Size(val(WIDTH), val(HEIGHT));
         }
     }
 }

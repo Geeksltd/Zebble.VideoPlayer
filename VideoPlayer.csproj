@@ -6,13 +6,13 @@
     <RootNamespace>Zebble</RootNamespace>
     <PackageId>Zebble.VideoPlayer</PackageId>
     <Product>$(AssemblyName) ($(TargetFramework))</Product>
-    <Version>4.2.409.0</Version>
+    <Version>4.2.411</Version>
     <PackOnBuild>true</PackOnBuild>
     <NeutralLanguage>en</NeutralLanguage>
     <DefineConstants>$(DefineConstants)</DefineConstants>
     <UseFullSemVerForNuGet>false</UseFullSemVerForNuGet>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>preview</LangVersion>
     <DebugType>portable</DebugType>
     <PackageLicenseUrl>https://raw.githubusercontent.com/Geeksltd/Zebble.VideoPlayer/master/Zebble-LicenseAgreement.txt</PackageLicenseUrl>
     <PackageProjectUrl>https://nuget.org/packages/Zebble.VideoPlayer/</PackageProjectUrl>
@@ -66,11 +66,14 @@
     <None Remove="Zebble-LicenseAgreement.txt" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Zebble" Version="4.5.445" />
+    <PackageReference Include="Zebble" Version="4.5.504" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Android\" />
     <Folder Include="iOS\" />
     <Folder Include="UWP\" />
   </ItemGroup>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="update-local-nuget-cache" />
+  </Target>
 </Project>
