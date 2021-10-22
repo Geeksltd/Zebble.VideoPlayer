@@ -20,6 +20,8 @@ namespace Zebble
         AVPlayerLooper PlayerLooper;
         AVQueuePlayer QueuePlayer;
 
+        NSObject NotificationCenterToken;
+
         Preparedhandler Prepared = new Preparedhandler();
 
         public IosVideo(VideoPlayer view)
@@ -38,7 +40,7 @@ namespace Zebble
             View.SoughtBeginning.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.SeekToBegining));
             View.Muted.HandleOn(Thread.UI, Mute);
 
-            NSNotificationCenter.DefaultCenter.AddObserver(AVPlayerItem.DidPlayToEndTimeNotification, (notify) =>
+            NotificationCenterToken = NSNotificationCenter.DefaultCenter.AddObserver(AVPlayerItem.DidPlayToEndTimeNotification, (notify) =>
             {
                 if (IsDead(out var _)) return;
                 View.FinishedPlaying.RaiseOn(Thread.UI);
@@ -254,7 +256,7 @@ namespace Zebble
         {
             if (disposing)
             {
-                NSNotificationCenter.DefaultCenter.RemoveObserver(AVPlayerItem.DidPlayToEndTimeNotification);
+                NSNotificationCenter.DefaultCenter.RemoveObserver(NotificationCenterToken);
 
                 if (View is not null && View.Loop == false) PlayerItem.RemoveObserver(Self, "status");
 
