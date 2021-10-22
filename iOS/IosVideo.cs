@@ -40,7 +40,8 @@ namespace Zebble
 
             NSNotificationCenter.DefaultCenter.AddObserver(AVPlayerItem.DidPlayToEndTimeNotification, (notify) =>
             {
-                View?.FinishedPlaying.RaiseOn(Thread.UI);
+                if (IsDead(out var _)) return;
+                View.FinishedPlaying.RaiseOn(Thread.UI);
             });
 
             LoadVideo();
@@ -189,6 +190,8 @@ namespace Zebble
 
             Prepared.Handle(result =>
             {
+                if (IsDead(out var _)) return;
+
                 switch (result)
                 {
                     case VideoState.Play:
@@ -235,6 +238,7 @@ namespace Zebble
 
         public override void ObserveValue(NSString keyPath, NSObject ofObject, NSDictionary change, IntPtr context)
         {
+            if (IsDead(out var _)) return;
             if (ofObject is AVPlayerItem item && keyPath == "status")
             {
                 if (item.Status == AVPlayerItemStatus.ReadyToPlay)
@@ -250,6 +254,10 @@ namespace Zebble
         {
             if (disposing)
             {
+                NSNotificationCenter.DefaultCenter.RemoveObserver(AVPlayerItem.DidPlayToEndTimeNotification);
+
+                if (View is not null && View.Loop == false) PlayerItem.RemoveObserver(Self, "status");
+
                 Asset?.Dispose();
                 Asset = null;
 
@@ -279,6 +287,14 @@ namespace Zebble
             }
 
             base.Dispose(disposing);
+        }
+
+        [EscapeGCop("In this case an out parameter can improve the code.")]
+        bool IsDead(out VideoPlayer result)
+        {
+            result = View;
+            if (result == null) return true;
+            return result.IsDisposing;
         }
     }
 }
