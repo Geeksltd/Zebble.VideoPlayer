@@ -256,9 +256,9 @@ namespace Zebble
         {
             if (disposing)
             {
-                NSNotificationCenter.DefaultCenter.RemoveObserver(NotificationCenterToken);
+                NSNotificationCenter.DefaultCenter?.RemoveObserver(NotificationCenterToken);
 
-                if (View is not null && View.Loop == false) PlayerItem.RemoveObserver(Self, "status");
+                if (View is not null && View.Loop == false) PlayerItem?.RemoveObserver(Self, "status");
 
                 Asset?.Dispose();
                 Asset = null;
