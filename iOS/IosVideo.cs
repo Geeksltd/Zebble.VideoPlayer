@@ -20,8 +20,8 @@ namespace Zebble
         AVPlayerLooper PlayerLooper;
         AVQueuePlayer QueuePlayer;
 
-        IDisposable NotificationCenterObservation;
-        IDisposable PlayerItemObservation;
+        IDisposable DidPlayToEndTimeObservation;
+        IDisposable StatusObservation;
 
         Preparedhandler Prepared = new Preparedhandler();
 
@@ -40,12 +40,6 @@ namespace Zebble
             View.Stopped.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Stop));
             View.SoughtBeginning.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.SeekToBegining));
             View.Muted.HandleOn(Thread.UI, Mute);
-
-            NotificationCenterObservation = NSNotificationCenter.DefaultCenter.AddObserver(AVPlayerItem.DidPlayToEndTimeNotification, 0, (notify) =>
-            {
-                if (IsDead(out var _)) return;
-                View.FinishedPlaying.RaiseOn(Thread.UI);
-            });
 
             LoadVideo();
         }
@@ -138,6 +132,12 @@ namespace Zebble
 
         void InitializePlayerItem()
         {
+            DidPlayToEndTimeObservation = AVPlayerItem.Notifications.ObserveDidPlayToEndTime(PlayerItem, (_, _) =>
+            {
+                if (IsDead(out var _)) return;
+                View.FinishedPlaying.RaiseOn(Thread.UI);
+            });
+
             if (View.Loop)
             {
                 QueuePlayer = new AVQueuePlayer();
@@ -152,7 +152,7 @@ namespace Zebble
                 Player = new AVPlayer(PlayerItem);
                 PlayerLayer = AVPlayerLayer.FromPlayer(Player);
 
-                PlayerItemObservation = PlayerItem.AddObserver("status", 0, (_) =>
+                StatusObservation = PlayerItem.AddObserver(nameof(AVPlayerItem.Status), 0, _ =>
                 {
                     if (IsDead(out var _)) return;
                     if (PlayerItem?.Status == AVPlayerItemStatus.ReadyToPlay)
@@ -252,8 +252,8 @@ namespace Zebble
         {
             if (disposing)
             {
-                NotificationCenterObservation?.Dispose();
-                PlayerItemObservation?.Dispose();
+                DidPlayToEndTimeObservation?.Dispose();
+                StatusObservation?.Dispose();
 
                 Asset?.Dispose();
                 Asset = null;
