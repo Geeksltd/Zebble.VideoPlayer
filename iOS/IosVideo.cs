@@ -20,7 +20,8 @@ namespace Zebble
         AVPlayerLooper PlayerLooper;
         AVQueuePlayer QueuePlayer;
 
-        NSObject NotificationCenterToken;
+        IDisposable NotificationCenterObservation;
+        IDisposable PlayerItemObservation;
 
         Preparedhandler Prepared = new Preparedhandler();
 
@@ -40,7 +41,7 @@ namespace Zebble
             View.SoughtBeginning.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.SeekToBegining));
             View.Muted.HandleOn(Thread.UI, Mute);
 
-            NotificationCenterToken = NSNotificationCenter.DefaultCenter.AddObserver(AVPlayerItem.DidPlayToEndTimeNotification, (notify) =>
+            NotificationCenterObservation = NSNotificationCenter.DefaultCenter.AddObserver(AVPlayerItem.DidPlayToEndTimeNotification, 0, (notify) =>
             {
                 if (IsDead(out var _)) return;
                 View.FinishedPlaying.RaiseOn(Thread.UI);
@@ -151,7 +152,16 @@ namespace Zebble
                 Player = new AVPlayer(PlayerItem);
                 PlayerLayer = AVPlayerLayer.FromPlayer(Player);
 
-                PlayerItem.AddObserver(Self, "status", 0, IntPtr.Zero);
+                PlayerItemObservation = PlayerItem.AddObserver("status", 0, (_) =>
+                {
+                    if (IsDead(out var _)) return;
+                    if (PlayerItem?.Status == AVPlayerItemStatus.ReadyToPlay)
+                    {
+                        View.IsReady = true;
+                        OnReady();
+                    }
+                    else View.IsReady = false;
+                });
             }
 
             PlayerLayer.VideoGravity = AVLayerVideoGravity.ResizeAspectFill;
@@ -238,27 +248,12 @@ namespace Zebble
             View.VideoSize = new Size((float)videoSize.Width, (float)videoSize.Height);
         }
 
-        public override void ObserveValue(NSString keyPath, NSObject ofObject, NSDictionary change, IntPtr context)
-        {
-            if (IsDead(out var _)) return;
-            if (ofObject is AVPlayerItem item && keyPath == "status")
-            {
-                if (item.Status == AVPlayerItemStatus.ReadyToPlay)
-                {
-                    View.IsReady = true;
-                    OnReady();
-                }
-                else View.IsReady = false;
-            }
-        }
-
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                NSNotificationCenter.DefaultCenter?.RemoveObserver(NotificationCenterToken);
-
-                if (View is not null && View.Loop == false) PlayerItem?.RemoveObserver(Self, "status");
+                NotificationCenterObservation?.Dispose();
+                PlayerItemObservation?.Dispose();
 
                 Asset?.Dispose();
                 Asset = null;
