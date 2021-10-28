@@ -273,11 +273,9 @@ namespace Zebble
                 PlayerItem?.Dispose();
                 PlayerItem = null;
 
-                Player?.Pause();
                 Player?.Dispose();
                 Player = null;
 
-                QueuePlayer?.Pause();
                 QueuePlayer?.Dispose();
                 QueuePlayer = null;
 
