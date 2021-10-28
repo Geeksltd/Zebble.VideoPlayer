@@ -32,7 +32,7 @@ namespace Zebble
             View.Width.Changed.HandleOn(Thread.UI, OnFrameChanged);
             View.Height.Changed.HandleOn(Thread.UI, OnFrameChanged);
             View.Buffered.HandleOn(Thread.UI, BufferVideo);
-            View.PathChanged.HandleOn(Thread.UI, LoadVideo);
+            View.PathChanged.HandleOn(Thread.UI, () => { CoreDispose(); LoadVideo(); });
             View.Started.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Play));
             View.Paused.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Pause));
             View.Resumed.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Resume));
@@ -258,39 +258,44 @@ namespace Zebble
         {
             if (disposing)
             {
-                DidPlayToEndTimeObservation?.Dispose();
-                DidPlayToEndTimeObservation = null;
-
-                StatusObservation?.Dispose();
-                StatusObservation = null;
-
-                Asset?.Dispose();
-                Asset = null;
-
-                UrlAsset?.Dispose();
-                UrlAsset = null;
-
-                PlayerItem?.Dispose();
-                PlayerItem = null;
-
-                Player?.Dispose();
-                Player = null;
-
-                QueuePlayer?.Dispose();
-                QueuePlayer = null;
-
-                PlayerLooper?.DisableLooping();
-                PlayerLooper?.Dispose();
-                PlayerLooper = null;
-
-                PlayerLayer?.Dispose();
-                PlayerLayer = null;
+                CoreDispose();
 
                 Prepared = null;
                 View = null;
             }
 
             base.Dispose(disposing);
+        }
+
+        void CoreDispose()
+        {
+            DidPlayToEndTimeObservation?.Dispose();
+            DidPlayToEndTimeObservation = null;
+
+            StatusObservation?.Dispose();
+            StatusObservation = null;
+
+            Asset?.Dispose();
+            Asset = null;
+
+            UrlAsset?.Dispose();
+            UrlAsset = null;
+
+            PlayerItem?.Dispose();
+            PlayerItem = null;
+
+            Player?.Dispose();
+            Player = null;
+
+            QueuePlayer?.Dispose();
+            QueuePlayer = null;
+
+            PlayerLooper?.DisableLooping();
+            PlayerLooper?.Dispose();
+            PlayerLooper = null;
+
+            PlayerLayer?.Dispose();
+            PlayerLayer = null;
         }
 
         [EscapeGCop("In this case an out parameter can improve the code.")]
