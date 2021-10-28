@@ -109,12 +109,16 @@ namespace Zebble
             }
             else
             {
+                url = "file://" + Device.IO.File(url).FullName;
+                var nsUrl = NSUrl.FromString(url);
+                // It's possible for a non-null url, NSUrl return a null value
+                if (nsUrl == null) return;
+
                 UIGraphics.BeginImageContext(new CoreGraphics.CGSize(1, 1));
 
                 Frame = View.GetFrame();
 
-                url = "file://" + Device.IO.File(url).FullName;
-                Asset = AVAsset.FromUrl(NSUrl.FromString(url));
+                Asset = AVAsset.FromUrl(nsUrl);
 
                 SetNaturalVideoSize(asset: Asset, urlAsset: null);
 
@@ -127,7 +131,6 @@ namespace Zebble
 
             View.LoadCompleted.Raise();
         }
-
 
         void InitializePlayerItem()
         {
@@ -174,11 +177,15 @@ namespace Zebble
             string url = View.Path;
             if (url.IsEmpty()) return;
 
+            var nsUrl = NSUrl.FromString(url);
+            // It's possible for a non-null url, NSUrl return a null value
+            if (nsUrl == null) return;
+
             UIGraphics.BeginImageContext(new CoreGraphics.CGSize(1, 1));
 
             Frame = View.GetFrame();
 
-            UrlAsset = new AVUrlAsset(NSUrl.FromString(url));
+            UrlAsset = new AVUrlAsset(nsUrl);
 
             SetNaturalVideoSize(asset: null, urlAsset: UrlAsset);
 
