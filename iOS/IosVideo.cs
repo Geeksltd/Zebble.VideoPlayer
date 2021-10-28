@@ -29,9 +29,8 @@ namespace Zebble
         {
             View = view;
 
-            view.Width.Changed.HandleOn(Thread.UI, OnFrameChanged);
-            view.Height.Changed.HandleOn(Thread.UI, OnFrameChanged);
-
+            View.Width.Changed.HandleOn(Thread.UI, OnFrameChanged);
+            View.Height.Changed.HandleOn(Thread.UI, OnFrameChanged);
             View.Buffered.HandleOn(Thread.UI, BufferVideo);
             View.PathChanged.HandleOn(Thread.UI, LoadVideo);
             View.Started.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Play));
@@ -253,7 +252,10 @@ namespace Zebble
             if (disposing)
             {
                 DidPlayToEndTimeObservation?.Dispose();
+                DidPlayToEndTimeObservation = null;
+
                 StatusObservation?.Dispose();
+                StatusObservation = null;
 
                 Asset?.Dispose();
                 Asset = null;
@@ -291,7 +293,7 @@ namespace Zebble
         {
             result = View;
             if (result == null) return true;
-            return result.IsDisposing;
+            return result.IsDisposing || View.IsDisposed;
         }
     }
 }
