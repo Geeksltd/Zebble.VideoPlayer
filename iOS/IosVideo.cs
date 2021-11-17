@@ -23,7 +23,7 @@ namespace Zebble
         IDisposable DidPlayToEndTimeObservation;
         IDisposable StatusObservation;
 
-        Preparedhandler Prepared = new Preparedhandler();
+        Preparedhandler Prepared = new();
 
         public IosVideo(VideoPlayer view)
         {
@@ -33,11 +33,11 @@ namespace Zebble
             View.Height.Changed.HandleOn(Thread.UI, OnFrameChanged);
             View.Buffered.HandleOn(Thread.UI, BufferVideo);
             View.PathChanged.HandleOn(Thread.UI, () => { CoreDispose(); LoadVideo(); });
-            View.Started.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Play));
-            View.Paused.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Pause));
-            View.Resumed.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Resume));
-            View.Stopped.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.Stop));
-            View.SoughtBeginning.HandleOn(Thread.UI, () => Prepared.Raise(VideoState.SeekToBegining));
+            View.Started.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Play));
+            View.Paused.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Pause));
+            View.Resumed.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Resume));
+            View.Stopped.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Stop));
+            View.SoughtBeginning.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.SeekToBegining));
             View.Muted.HandleOn(Thread.UI, Mute);
 
             LoadVideo();
@@ -45,7 +45,9 @@ namespace Zebble
 
         void OnFrameChanged()
         {
+            if (IsDead(out var view)) return;
             if (PlayerLayer == null) return;
+
             var frame = View.GetFrame();
 
             Frame = frame;
@@ -54,6 +56,8 @@ namespace Zebble
 
         void Mute()
         {
+            if (IsDead(out var _)) return;
+
             if (View.Loop)
                 QueuePlayer.Muted = View.IsMuted;
             else
@@ -62,6 +66,8 @@ namespace Zebble
 
         void Resume()
         {
+            if (IsDead(out _)) return;
+
             if (View.Loop)
                 QueuePlayer?.Play();
             else
@@ -70,6 +76,8 @@ namespace Zebble
 
         void SeekBeginning()
         {
+            if (IsDead(out _)) return;
+
             if (View.Loop)
                 QueuePlayer?.Seek(CoreMedia.CMTime.Zero);
             else
@@ -84,6 +92,8 @@ namespace Zebble
 
         void Pause()
         {
+            if (IsDead(out _)) return;
+
             if (View.Loop)
                 QueuePlayer?.Pause();
             else
@@ -92,6 +102,8 @@ namespace Zebble
 
         void Stop()
         {
+            if (IsDead(out _)) return;
+
             if (View.Loop)
                 QueuePlayer?.Pause();
             else
@@ -100,6 +112,8 @@ namespace Zebble
 
         void LoadVideo()
         {
+            if (IsDead(out var _)) return;
+
             string url = View.Path;
             if (url.IsEmpty()) return;
 
@@ -174,6 +188,8 @@ namespace Zebble
 
         void BufferVideo()
         {
+            if (IsDead(out var _)) return;
+
             string url = View.Path;
             if (url.IsEmpty()) return;
 
@@ -198,6 +214,8 @@ namespace Zebble
 
         void OnReady()
         {
+            if (IsDead(out _)) return;
+
             if (View.AutoPlay)
             {
                 if (View.Loop)
@@ -206,7 +224,7 @@ namespace Zebble
                     Player.Play();
             }
 
-            Prepared.Handle(result =>
+            Prepared?.Handle(result =>
             {
                 if (IsDead(out var _)) return;
 
