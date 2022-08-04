@@ -168,7 +168,7 @@ namespace Zebble
                 Player = new AVPlayer(PlayerItem);
                 PlayerLayer = AVPlayerLayer.FromPlayer(Player);
 
-                StatusObservation = PlayerItem.AddObserver(nameof(AVPlayerItem.Status), 0, _ =>
+                StatusObservation = PlayerItem.AddObserver("status", 0, _ =>
                 {
                     if (IsDead(out var _)) return;
                     if (PlayerItem?.Status == AVPlayerItemStatus.ReadyToPlay)
@@ -255,11 +255,7 @@ namespace Zebble
         {
             if (asset == null && urlAsset == null) return;
 
-            AVAssetTrack[] tracks;
-
-            if (asset == null) tracks = urlAsset.TracksWithMediaType(AVMediaType.Video);
-            else tracks = asset.TracksWithMediaType(AVMediaType.Video);
-
+            var tracks = (asset ?? urlAsset).TracksWithMediaType(AVMediaType.Video);
             if (tracks.None()) return;
 
             var track = tracks.First();
