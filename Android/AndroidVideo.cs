@@ -10,7 +10,7 @@ namespace Zebble
     using static Zebble.VideoPlayer;
     using Olive;
 
-    class AndroidVideo : RelativeLayout, ISurfaceHolderCallback, MediaPlayer.IOnPreparedListener
+    class AndroidVideo : RelativeLayout, ISurfaceHolderCallback, MediaPlayer.IOnPreparedListener, MediaPlayer.IOnVideoSizeChangedListener
     {
         VideoPlayer View;
 
@@ -53,6 +53,7 @@ namespace Zebble
         {
             VideoPlayer = new MediaPlayer();
             VideoPlayer.SetOnPreparedListener(this);
+            VideoPlayer.SetOnVideoSizeChangedListener(this);
             VideoPlayer.Completion += OnCompletion;
             VideoPlayer.VideoSizeChanged += OnVideoSizeChanged;
         }
@@ -60,10 +61,7 @@ namespace Zebble
         LayoutParams CreateLayout()
         {
             var result = new LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
-            result.AddRule(LayoutRules.AlignParentTop);
-            result.AddRule(LayoutRules.AlignParentBottom);
-            result.AddRule(LayoutRules.AlignParentLeft);
-            result.AddRule(LayoutRules.AlignParentRight);
+            result.AddRule(LayoutRules.CenterInParent);
             return result;
         }
 
@@ -119,7 +117,7 @@ namespace Zebble
         {
             if (IsDead(out var view)) return;
 
-            try { mp.SetVideoScalingMode(VideoScalingMode.ScaleToFitWithCropping); }
+            try { mp.SetVideoScalingMode(VideoScalingMode.ScaleToFit); }
             catch (Exception ex) { Log.For(this).Error(ex); }
 
             mp.Looping = view.Loop;
@@ -129,6 +127,36 @@ namespace Zebble
 
             if (view.IsMuted) mp.SetVolume(0, 0);
             else mp.SetVolume(1, 1);
+
+            UpdateLayoutSize();
+        }
+
+        void MediaPlayer.IOnVideoSizeChangedListener.OnVideoSizeChanged(MediaPlayer mp, int width, int height)
+            => UpdateLayoutSize();
+
+        void UpdateLayoutSize()
+        {
+            var screenWidth = Screen.DisplaySetting.HardwareWidth;
+            var screenHeight = Screen.DisplaySetting.HardwareHeight;
+
+            var videoWidth = VideoPlayer.VideoWidth;
+            var videoHeight = VideoPlayer.VideoHeight;
+
+            var newParams = VideoSurface.LayoutParameters;
+
+            if (videoWidth > videoHeight)
+            {
+                newParams.Width = screenWidth;
+                newParams.Height = screenWidth * videoHeight / videoWidth;
+            }
+            else
+            {
+                newParams.Width = screenHeight * videoWidth / videoHeight;
+                newParams.Height = screenHeight;
+            }
+
+            VideoSurface.LayoutParameters = newParams;
+            SetGravity(GravityFlags.Center);
         }
 
         void OnVideoStart()

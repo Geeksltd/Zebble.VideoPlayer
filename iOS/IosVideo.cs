@@ -180,7 +180,7 @@ namespace Zebble
                 });
             }
 
-            PlayerLayer.VideoGravity = AVLayerVideoGravity.ResizeAspectFill;
+            PlayerLayer.VideoGravity = AVLayerVideoGravity.ResizeAspect;
 
             PlayerLayer.Frame = Bounds;
             Layer.AddSublayer(PlayerLayer);
