@@ -124,7 +124,7 @@ namespace Zebble
             else
             {
                 url = "file://" + Device.IO.File(url).FullName;
-                var nsUrl = NSUrl.FromString(url);
+                var nsUrl = url.ToNsUrl();
                 // It's possible for a non-null url, NSUrl return a null value
                 if (nsUrl == null) return;
 
@@ -193,7 +193,7 @@ namespace Zebble
             string url = View.Path;
             if (url.IsEmpty()) return;
 
-            var nsUrl = NSUrl.FromString(url);
+            var nsUrl = url.ToNsUrl();
             // It's possible for a non-null url, NSUrl return a null value
             if (nsUrl == null) return;
 
