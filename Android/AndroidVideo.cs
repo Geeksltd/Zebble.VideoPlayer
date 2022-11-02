@@ -144,10 +144,10 @@ namespace Zebble
 
             var newParams = VideoSurface.LayoutParameters;
 
-            var ratio = Math.Min(screenWidth / videoWidth, screenHeight / videoHeight);
+            var ratio = Math.Min((float)screenWidth / videoWidth, (float)screenHeight / videoHeight);
 
-            newParams.Width = videoWidth * ratio;
-            newParams.Height = videoHeight * ratio;
+            newParams.Width = (int)(videoWidth * ratio);
+            newParams.Height = (int)(videoHeight * ratio);
 
             VideoSurface.LayoutParameters = newParams;
             SetGravity(GravityFlags.Center);
