@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Olive;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using YoutubeExplode;
 
 namespace Zebble
 {
@@ -69,6 +71,26 @@ namespace Zebble
         {
             PathChanged?.Dispose();
             base.Dispose();
+        }
+
+        public async Task<YoutubeDetails> LoadYoutube(string url)
+        {
+            string host = url.AsUri()?.Host;
+            if (host.IsEmpty())
+                throw new InvalidOperationException(url);
+            if (host.EndsWith("youtube.com", StringComparison.OrdinalIgnoreCase) || host.EndsWith("youtu.be", StringComparison.OrdinalIgnoreCase))
+            {
+                var youtube = new YoutubeClient();
+                var video = await youtube.Videos.GetAsync(url);
+                var streamManifest = await youtube.Videos.Streams.GetManifestAsync(video.Id);
+                return new YoutubeDetails()
+                {
+                    Video = video,
+                    StreamManifest = streamManifest
+                };
+            }
+            else
+                throw new InvalidOperationException(url);
         }
 
         internal enum VideoState { Play, Pause, Stop, SeekToBegining, Resume }
