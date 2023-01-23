@@ -27,6 +27,7 @@ namespace Zebble
             View.Seeked.HandleOn(Thread.UI, (position) => Result.Position = position);
             View.SoughtBeginning.HandleOn(Thread.UI, () => Result.Position = 0.Milliseconds());
             view.Muted.HandleOn(Thread.UI, () => Result.IsMuted = view.IsMuted);
+            View.GetPosition = () => Result.Position;
 
             Result = new controls.MediaElement { Stretch = media.Stretch.Uniform };
             Result.MediaEnded += (e, args) => View.FinishedPlaying.RaiseOn(Thread.UI);
