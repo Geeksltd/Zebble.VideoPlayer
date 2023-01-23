@@ -24,6 +24,7 @@ namespace Zebble
             View.Paused.HandleOn(Thread.UI, () => Result.Pause());
             View.Resumed.HandleOn(Thread.UI, () => Result.Play());
             View.Stopped.HandleOn(Thread.UI, () => Result.Stop());
+            View.Seeked.HandleOn(Thread.UI, (position) => Result.Position = position);
             View.SoughtBeginning.HandleOn(Thread.UI, () => Result.Position = 0.Milliseconds());
             view.Muted.HandleOn(Thread.UI, () => Result.IsMuted = view.IsMuted);
 
@@ -78,13 +79,13 @@ namespace Zebble
 
             Result.AutoPlay = View.AutoPlay;
             Result.IsLooping = View.Loop;
-
             Result.Loaded += (e, args) => View.LoadCompleted.Raise();
         }
 
         void Result_BufferingProgressChanged(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
             View.IsReady = true;
+            View.Duration = Result.NaturalDuration.TimeSpan;
         }
 
         async Task BufferVideo()

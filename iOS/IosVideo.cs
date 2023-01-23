@@ -39,6 +39,7 @@ namespace Zebble
             View.Stopped.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Stop));
             View.SoughtBeginning.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.SeekToBegining));
             View.Muted.HandleOn(Thread.UI, Mute);
+            View.Seeked.HandleOn(Thread.UI, (position) => Player.Seek(CoreMedia.CMTime.FromSeconds(position.Seconds, 0)));
 
             LoadVideo();
         }
@@ -223,7 +224,7 @@ namespace Zebble
                 else
                     Player.Play();
             }
-
+            View.Duration = new TimeSpan(0, 0, (int)Player.CurrentTime.Seconds);
             Prepared?.Handle(result =>
             {
                 if (IsDead(out var _)) return;

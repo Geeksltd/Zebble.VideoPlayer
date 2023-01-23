@@ -37,6 +37,7 @@ namespace Zebble
             View.Stopped.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Stop)));
             View.SoughtBeginning.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.SeekToBegining)));
             View.Muted.HandleOn(Thread.UI, Mute);
+            View.Seeked.HandleOn(Thread.UI, (position) => VideoPlayer.SeekTo(position.Milliseconds));
 
             Prepared.Handle(HandleStateCommand);
         }
@@ -122,6 +123,7 @@ namespace Zebble
 
             mp.Looping = view.Loop;
             view.IsReady = true;
+            View.Duration = mp.Duration.Milliseconds();
 
             if (view.AutoBuffer) mp.Start();
 

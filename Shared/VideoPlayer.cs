@@ -1,6 +1,7 @@
 ﻿using Olive;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using YoutubeExplode;
 
@@ -16,11 +17,13 @@ namespace Zebble
         internal readonly AsyncEvent Stopped = new AsyncEvent();
         internal readonly AsyncEvent SoughtBeginning = new AsyncEvent();
         internal readonly AsyncEvent Buffered = new AsyncEvent();
+        internal readonly AsyncEvent<TimeSpan> Seeked = new AsyncEvent<TimeSpan>();
         internal readonly AsyncEvent<VideoPlayer> Muted = new AsyncEvent<VideoPlayer>();
 
         public readonly AsyncEvent FinishedPlaying = new AsyncEvent();
         public readonly AsyncEvent LoadCompleted = new AsyncEvent();
 
+        public VideoQuality Quality { get; set; } = VideoQuality.Medium;
         public Size VideoSize { get; set; } = new Size(0, 0);
 
         public string Path
@@ -67,13 +70,17 @@ namespace Zebble
 
         public void BufferVideo() => Buffered.Raise();
 
+        public void Seek(TimeSpan timeSpan) => Seeked.Raise(timeSpan);
+
+        public TimeSpan? Duration { get; set; }
+
         public override void Dispose()
         {
             PathChanged?.Dispose();
             base.Dispose();
         }
 
-        public async Task<YoutubeDetails> LoadYoutube(string url)
+        public async Task LoadYoutube(string url)
         {
             string host = url.AsUri()?.Host;
             if (host.IsEmpty())
@@ -83,11 +90,31 @@ namespace Zebble
                 var youtube = new YoutubeClient();
                 var video = await youtube.Videos.GetAsync(url);
                 var streamManifest = await youtube.Videos.Streams.GetManifestAsync(video.Id);
-                return new YoutubeDetails()
+                var orderedStreams = streamManifest.GetMuxedStreams().OrderByDescending(x => x.ToString().Contains("mp4", StringComparison.OrdinalIgnoreCase));
+                string videoUrl = "";
+                switch (Quality)
                 {
-                    Video = video,
-                    StreamManifest = streamManifest
-                };
+                    case VideoQuality.Low:
+                        {
+                            videoUrl = orderedStreams.OrderBy(x => x.VideoQuality.MaxHeight).FirstOrDefault()?.Url;
+                            break;
+                        }
+                    case VideoQuality.Medium:
+                        {
+                            videoUrl = orderedStreams.OrderBy(x => x.VideoQuality.MaxHeight).Skip(orderedStreams.Count() / 2).FirstOrDefault()?.Url;
+                            break;
+                        }
+                    case VideoQuality.High:
+                        {
+                            videoUrl = orderedStreams.OrderByDescending(x => x.VideoQuality.MaxHeight).FirstOrDefault()?.Url;
+                            break;
+                        }
+                }
+                if (videoUrl.IsEmpty())
+                    videoUrl = orderedStreams.FirstOrDefault()?.Url;
+                if (videoUrl.IsEmpty())
+                    throw new InvalidOperationException("Muxed video not found!");
+                Path = videoUrl;
             }
             else
                 throw new InvalidOperationException(url);
