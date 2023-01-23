@@ -54,7 +54,9 @@ namespace Zebble
         {
             var url = View.Path;
             if (url.IsEmpty()) return;
-
+            if (View.IsYoutube(url))
+                url = await View.LoadYoutube(url);
+            View.LoadedPath = url;
             if (url.IsUrl())
             {
                 if (View.AutoBuffer)
@@ -90,7 +92,7 @@ namespace Zebble
 
         async Task BufferVideo()
         {
-            var url = View.Path;
+            var url = View.LoadedPath;
             if (url.IsEmpty()) return;
 
             Result.Source = url.AsUri();

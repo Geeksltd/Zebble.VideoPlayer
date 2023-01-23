@@ -5,10 +5,11 @@ namespace Zebble
     using Android.Runtime;
     using Android.Views;
     using Android.Widget;
+    using Olive;
     using System;
+    using System.Threading.Tasks;
     using Zebble.Device;
     using static Zebble.VideoPlayer;
-    using Olive;
 
     class AndroidVideo : RelativeLayout, ISurfaceHolderCallback, MediaPlayer.IOnPreparedListener, MediaPlayer.IOnVideoSizeChangedListener
     {
@@ -163,16 +164,18 @@ namespace Zebble
             else Prepared.Raise(VideoState.Play).GetAwaiter();
         }
 
-        void LoadVideo()
+        async Task LoadVideo()
         {
             if (IsDead(out var view)) return;
 
             var source = view.Path;
             if (source.IsEmpty()) return;
-
+            if (View.IsYoutube(source))
+                source = await view.LoadYoutube(source);
+            View.LoadedPath = source;
             if (!IsSurfaceCreated)
             {
-                VideoSurfaceCreate.Raise(VideoState.Play);
+                await VideoSurfaceCreate.Raise(VideoState.Play);
                 return;
             }
 

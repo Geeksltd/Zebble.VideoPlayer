@@ -10,6 +10,7 @@ namespace Zebble
     public partial class VideoPlayer : View, IRenderedBy<VideoPlayerRenderer>
     {
         string path; bool isMute;
+        internal string LoadedPath { get; set; }
         internal readonly AsyncEvent PathChanged = new AsyncEvent();
         internal readonly AsyncEvent Started = new AsyncEvent();
         internal readonly AsyncEvent Paused = new AsyncEvent();
@@ -80,12 +81,17 @@ namespace Zebble
             base.Dispose();
         }
 
-        public async Task LoadYoutube(string url)
+        internal bool IsYoutube(string url)
         {
             string host = url.AsUri()?.Host;
             if (host.IsEmpty())
-                throw new InvalidOperationException(url);
-            if (host.EndsWith("youtube.com", StringComparison.OrdinalIgnoreCase) || host.EndsWith("youtu.be", StringComparison.OrdinalIgnoreCase))
+                return false;
+            return host.EndsWith("youtube.com", StringComparison.OrdinalIgnoreCase) || host.EndsWith("youtu.be", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal async Task<string> LoadYoutube(string url)
+        {
+            if (IsYoutube(url))
             {
                 var youtube = new YoutubeClient();
                 var video = await youtube.Videos.GetAsync(url);
@@ -113,11 +119,11 @@ namespace Zebble
                 if (videoUrl.IsEmpty())
                     videoUrl = orderedStreams.FirstOrDefault()?.Url;
                 if (videoUrl.IsEmpty())
-                    throw new InvalidOperationException("Muxed video not found!");
-                Path = videoUrl;
+                    return url;
+                return videoUrl;
             }
-            else
-                throw new InvalidOperationException(url);
+
+            return url;
         }
 
         internal enum VideoState { Play, Pause, Stop, SeekToBegining, Resume }
