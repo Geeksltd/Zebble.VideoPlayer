@@ -39,7 +39,7 @@ namespace Zebble
             View.SoughtBeginning.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.SeekToBegining)));
             View.Muted.HandleOn(Thread.UI, Mute);
             View.Seeked.HandleOn(Thread.UI, (position) => VideoPlayer.SeekTo(position.Milliseconds));
-            View.GetPosition = () => VideoPlayer.CurrentPosition.Milliseconds();
+            View.GetCurrentTime = () => VideoPlayer.CurrentPosition.Milliseconds();
             Prepared.Handle(HandleStateCommand);
         }
 

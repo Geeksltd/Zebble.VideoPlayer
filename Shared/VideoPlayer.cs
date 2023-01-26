@@ -20,7 +20,7 @@ namespace Zebble
         internal readonly AsyncEvent Buffered = new AsyncEvent();
         internal readonly AsyncEvent<TimeSpan> Seeked = new AsyncEvent<TimeSpan>();
         internal readonly AsyncEvent<VideoPlayer> Muted = new AsyncEvent<VideoPlayer>();
-        internal Func<TimeSpan?> GetPosition;
+        internal Func<TimeSpan?> GetCurrentTime;
 
         public readonly AsyncEvent FinishedPlaying = new AsyncEvent();
         public readonly AsyncEvent LoadCompleted = new AsyncEvent();
@@ -75,11 +75,11 @@ namespace Zebble
         public void Seek(TimeSpan timeSpan) => Seeked.Raise(timeSpan);
 
         public TimeSpan? Duration { get; set; }
-        public TimeSpan? Position
+        public TimeSpan? CurrentTime
         {
             get
             {
-                return GetPosition();
+                return GetCurrentTime();
             }
         }
 
