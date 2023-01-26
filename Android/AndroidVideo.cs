@@ -29,7 +29,6 @@ namespace Zebble
             View = view;
             CreateSurfaceView();
             CreateVideoPlayer();
-
             View.Buffered.HandleOn(Thread.UI, () => SafeInvoke(() => { VideoPlayer.PrepareAsync(); IsVideoBuffered = true; }));
             View.PathChanged.HandleOn(Thread.UI, () => SafeInvoke(() => { if (View.AutoPlay) LoadVideo(); }));
             View.Started.HandleOn(Thread.UI, () => SafeInvoke(OnVideoStart));
@@ -40,6 +39,7 @@ namespace Zebble
             View.Muted.HandleOn(Thread.UI, Mute);
             View.Seeked.HandleOn(Thread.UI, (position) => VideoPlayer.SeekTo(position.Milliseconds));
             View.GetCurrentTime = () => VideoPlayer.CurrentPosition.Milliseconds();
+            View.InitializeTimer();
             Prepared.Handle(HandleStateCommand);
         }
 

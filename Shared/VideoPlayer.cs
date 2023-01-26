@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Timers;
 using YoutubeExplode;
 
 namespace Zebble
@@ -19,6 +20,7 @@ namespace Zebble
         internal readonly AsyncEvent SoughtBeginning = new AsyncEvent();
         internal readonly AsyncEvent Buffered = new AsyncEvent();
         internal readonly AsyncEvent<TimeSpan> Seeked = new AsyncEvent<TimeSpan>();
+        public readonly AsyncEvent<TimeSpan?> TimeChanged = new AsyncEvent<TimeSpan?>();
         internal readonly AsyncEvent<VideoPlayer> Muted = new AsyncEvent<VideoPlayer>();
         internal Func<TimeSpan?> GetCurrentTime;
 
@@ -83,8 +85,25 @@ namespace Zebble
             }
         }
 
+        System.Timers.Timer CurrentTimeChangedTimer;
+        internal void InitializeTimer()
+        {
+            if (CurrentTimeChangedTimer != null)
+                return;
+            CurrentTimeChangedTimer = new Timer();
+            CurrentTimeChangedTimer.Elapsed += ATimer_Elapsed;
+            CurrentTimeChangedTimer.Interval = 1000;
+            CurrentTimeChangedTimer.Enabled = true;
+        }
+
+        private void ATimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            TimeChanged.Raise(CurrentTime);
+        }
+
         public override void Dispose()
         {
+            CurrentTimeChangedTimer.Elapsed -= ATimer_Elapsed;
             PathChanged?.Dispose();
             base.Dispose();
         }

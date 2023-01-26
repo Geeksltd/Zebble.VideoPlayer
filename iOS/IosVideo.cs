@@ -42,6 +42,7 @@ namespace Zebble
             View.Muted.HandleOn(Thread.UI, Mute);
             View.Seeked.HandleOn(Thread.UI, (position) => Player.Seek(CoreMedia.CMTime.FromSeconds(position.Seconds, 0)));
             View.GetCurrentTime = () => ((int)Player.CurrentTime.Seconds).Seconds();
+            View.InitializeTimer();
 
             LoadVideo();
         }
