@@ -228,7 +228,7 @@ namespace Zebble
                 else
                     Player.Play();
             }
-            View.Duration = new TimeSpan(0, 0, (int)Player.CurrentItem.Duration.Seconds);
+            View.Duration = ((int)Player.CurrentItem.Duration.Seconds).Seconds();
             Prepared?.Handle(result =>
             {
                 if (IsDead(out var _)) return;
