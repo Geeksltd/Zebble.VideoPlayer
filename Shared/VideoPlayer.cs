@@ -101,6 +101,7 @@ namespace Zebble
 
         public override void Dispose()
         {
+            CurrentTimeChangedTimer.Dispose();
             CurrentTimeChangedTimer.Elapsed -= OnRaiseCurrentTime;
             PathChanged?.Dispose();
             base.Dispose();
