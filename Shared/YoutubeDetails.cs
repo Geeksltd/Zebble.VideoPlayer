@@ -6,7 +6,7 @@ using YoutubeExplode.Videos.Streams;
 
 namespace Zebble
 {
-    public class YoutubeDetails
+    internal class YoutubeDetails
     {
         public Video Video { get; set; }   
         public StreamManifest StreamManifest { get; set; }   

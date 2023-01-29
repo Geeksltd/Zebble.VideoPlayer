@@ -77,13 +77,7 @@ namespace Zebble
         public void Seek(TimeSpan timeSpan) => Seeked.Raise(timeSpan);
 
         public TimeSpan? Duration { get; set; }
-        public TimeSpan? CurrentTime
-        {
-            get
-            {
-                return GetCurrentTime();
-            }
-        }
+        public TimeSpan? CurrentTime => GetCurrentTime();
 
         System.Timers.Timer CurrentTimeChangedTimer;
         internal void InitializeTimer()
@@ -91,19 +85,19 @@ namespace Zebble
             if (CurrentTimeChangedTimer != null)
                 return;
             CurrentTimeChangedTimer = new Timer();
-            CurrentTimeChangedTimer.Elapsed += ATimer_Elapsed;
+            CurrentTimeChangedTimer.Elapsed += OnRaiseCurrentTime;
             CurrentTimeChangedTimer.Interval = 1000;
             CurrentTimeChangedTimer.Enabled = true;
         }
 
-        private void ATimer_Elapsed(object sender, ElapsedEventArgs e)
+        private void OnRaiseCurrentTime(object sender, ElapsedEventArgs e)
         {
             TimeChanged.Raise(CurrentTime);
         }
 
         public override void Dispose()
         {
-            CurrentTimeChangedTimer.Elapsed -= ATimer_Elapsed;
+            CurrentTimeChangedTimer.Elapsed -= OnRaiseCurrentTime;
             PathChanged?.Dispose();
             base.Dispose();
         }
