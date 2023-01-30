@@ -7,6 +7,7 @@ namespace Zebble
     using UIKit;
     using static Zebble.VideoPlayer;
     using Olive;
+    using System.Threading.Tasks;
 
     class IosVideo : UIView
     {
@@ -39,6 +40,9 @@ namespace Zebble
             View.Stopped.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Stop));
             View.SoughtBeginning.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.SeekToBegining));
             View.Muted.HandleOn(Thread.UI, Mute);
+            View.Seeked.HandleOn(Thread.UI, (position) => Player.Seek(CoreMedia.CMTime.FromSeconds(position.Seconds, 0)));
+            View.GetCurrentTime = () => ((int)Player.CurrentTime.Seconds).Seconds();
+            View.InitializeTimer();
 
             LoadVideo();
         }
@@ -110,13 +114,15 @@ namespace Zebble
                 Player?.Pause();
         }
 
-        void LoadVideo()
+        async Task LoadVideo()
         {
             if (IsDead(out var _)) return;
 
             string url = View.Path;
             if (url.IsEmpty()) return;
-
+            if (View.IsYoutube(url))
+                url = await View.LoadYoutube(url);
+            View.LoadedPath = url;
             if (url.IsUrl())
             {
                 if (View.AutoBuffer) BufferVideo();
@@ -190,7 +196,7 @@ namespace Zebble
         {
             if (IsDead(out var _)) return;
 
-            string url = View.Path;
+            string url = View.LoadedPath;
             if (url.IsEmpty()) return;
 
             var nsUrl = url.ToNsUrl();
@@ -223,7 +229,7 @@ namespace Zebble
                 else
                     Player.Play();
             }
-
+            View.Duration = ((int)Player.CurrentItem.Duration.Seconds).Seconds();
             Prepared?.Handle(result =>
             {
                 if (IsDead(out var _)) return;

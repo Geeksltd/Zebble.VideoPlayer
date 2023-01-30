@@ -1,12 +1,17 @@
-﻿using System;
+﻿using Olive;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using System.Timers;
+using YoutubeExplode;
 
 namespace Zebble
 {
     public partial class VideoPlayer : View, IRenderedBy<VideoPlayerRenderer>
     {
         string path; bool isMute;
+        internal string LoadedPath { get; set; }
         internal readonly AsyncEvent PathChanged = new AsyncEvent();
         internal readonly AsyncEvent Started = new AsyncEvent();
         internal readonly AsyncEvent Paused = new AsyncEvent();
@@ -14,11 +19,15 @@ namespace Zebble
         internal readonly AsyncEvent Stopped = new AsyncEvent();
         internal readonly AsyncEvent SoughtBeginning = new AsyncEvent();
         internal readonly AsyncEvent Buffered = new AsyncEvent();
+        internal readonly AsyncEvent<TimeSpan> Seeked = new AsyncEvent<TimeSpan>();
+        public readonly AsyncEvent<TimeSpan?> TimeChanged = new AsyncEvent<TimeSpan?>();
         internal readonly AsyncEvent<VideoPlayer> Muted = new AsyncEvent<VideoPlayer>();
+        internal Func<TimeSpan?> GetCurrentTime;
 
         public readonly AsyncEvent FinishedPlaying = new AsyncEvent();
         public readonly AsyncEvent LoadCompleted = new AsyncEvent();
 
+        public VideoQuality Quality { get; set; } = VideoQuality.Medium;
         public Size VideoSize { get; set; } = new Size(0, 0);
 
         public string Path
@@ -65,10 +74,77 @@ namespace Zebble
 
         public void BufferVideo() => Buffered.Raise();
 
+        public void Seek(TimeSpan timeSpan) => Seeked.Raise(timeSpan);
+
+        public TimeSpan? Duration { get; set; }
+        public TimeSpan? CurrentTime => GetCurrentTime();
+
+        System.Timers.Timer CurrentTimeChangedTimer;
+        internal void InitializeTimer()
+        {
+            if (CurrentTimeChangedTimer != null)
+                return;
+            CurrentTimeChangedTimer = new Timer();
+            CurrentTimeChangedTimer.Elapsed += OnRaiseCurrentTime;
+            CurrentTimeChangedTimer.Interval = 1000;
+            CurrentTimeChangedTimer.Enabled = true;
+        }
+
+        private void OnRaiseCurrentTime(object sender, ElapsedEventArgs e)
+        {
+            TimeChanged.Raise(CurrentTime);
+        }
+
         public override void Dispose()
         {
+            CurrentTimeChangedTimer.Elapsed -= OnRaiseCurrentTime;
             PathChanged?.Dispose();
             base.Dispose();
+        }
+
+        internal bool IsYoutube(string url)
+        {
+            string host = url.AsUri()?.Host;
+            if (host.IsEmpty())
+                return false;
+            return host.EndsWith("youtube.com", StringComparison.OrdinalIgnoreCase) || host.EndsWith("youtu.be", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal async Task<string> LoadYoutube(string url)
+        {
+            if (IsYoutube(url))
+            {
+                var youtube = new YoutubeClient();
+                var video = await youtube.Videos.GetAsync(url);
+                var streamManifest = await youtube.Videos.Streams.GetManifestAsync(video.Id);
+                var orderedStreams = streamManifest.GetMuxedStreams().OrderByDescending(x => x.ToString().Contains("mp4", StringComparison.OrdinalIgnoreCase));
+                string videoUrl = "";
+                switch (Quality)
+                {
+                    case VideoQuality.Low:
+                        {
+                            videoUrl = orderedStreams.OrderBy(x => x.VideoQuality.MaxHeight).FirstOrDefault()?.Url;
+                            break;
+                        }
+                    case VideoQuality.Medium:
+                        {
+                            videoUrl = orderedStreams.OrderBy(x => x.VideoQuality.MaxHeight).Skip(orderedStreams.Count() / 2).FirstOrDefault()?.Url;
+                            break;
+                        }
+                    case VideoQuality.High:
+                        {
+                            videoUrl = orderedStreams.OrderByDescending(x => x.VideoQuality.MaxHeight).FirstOrDefault()?.Url;
+                            break;
+                        }
+                }
+                if (videoUrl.IsEmpty())
+                    videoUrl = orderedStreams.FirstOrDefault()?.Url;
+                if (videoUrl.IsEmpty())
+                    return url;
+                return videoUrl;
+            }
+
+            return url;
         }
 
         internal enum VideoState { Play, Pause, Stop, SeekToBegining, Resume }

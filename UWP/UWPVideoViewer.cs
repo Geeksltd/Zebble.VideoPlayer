@@ -24,8 +24,11 @@ namespace Zebble
             View.Paused.HandleOn(Thread.UI, () => Result.Pause());
             View.Resumed.HandleOn(Thread.UI, () => Result.Play());
             View.Stopped.HandleOn(Thread.UI, () => Result.Stop());
+            View.Seeked.HandleOn(Thread.UI, (position) => Result.Position = position);
             View.SoughtBeginning.HandleOn(Thread.UI, () => Result.Position = 0.Milliseconds());
             view.Muted.HandleOn(Thread.UI, () => Result.IsMuted = view.IsMuted);
+            View.GetCurrentTime = () => Result.Position;
+            View.InitializeTimer();
 
             Result = new controls.MediaElement { Stretch = media.Stretch.Uniform };
             Result.MediaEnded += (e, args) => View.FinishedPlaying.RaiseOn(Thread.UI);
@@ -53,7 +56,9 @@ namespace Zebble
         {
             var url = View.Path;
             if (url.IsEmpty()) return;
-
+            if (View.IsYoutube(url))
+                url = await View.LoadYoutube(url);
+            View.LoadedPath = url;
             if (url.IsUrl())
             {
                 if (View.AutoBuffer)
@@ -78,18 +83,18 @@ namespace Zebble
 
             Result.AutoPlay = View.AutoPlay;
             Result.IsLooping = View.Loop;
-
             Result.Loaded += (e, args) => View.LoadCompleted.Raise();
         }
 
         void Result_BufferingProgressChanged(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
             View.IsReady = true;
+            View.Duration = Result.NaturalDuration.TimeSpan;
         }
 
         async Task BufferVideo()
         {
-            var url = View.Path;
+            var url = View.LoadedPath;
             if (url.IsEmpty()) return;
 
             Result.Source = url.AsUri();

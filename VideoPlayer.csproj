@@ -66,6 +66,8 @@
     <None Remove="Zebble-LicenseAgreement.txt" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="7.0.0" />
+    <PackageReference Include="YoutubeExplode" Version="6.2.5" />
     <PackageReference Include="Zebble" Version="4.5.659" />
   </ItemGroup>
   <ItemGroup>

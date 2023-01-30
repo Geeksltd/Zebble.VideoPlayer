@@ -5,10 +5,11 @@ namespace Zebble
     using Android.Runtime;
     using Android.Views;
     using Android.Widget;
+    using Olive;
     using System;
+    using System.Threading.Tasks;
     using Zebble.Device;
     using static Zebble.VideoPlayer;
-    using Olive;
 
     class AndroidVideo : RelativeLayout, ISurfaceHolderCallback, MediaPlayer.IOnPreparedListener, MediaPlayer.IOnVideoSizeChangedListener
     {
@@ -28,7 +29,6 @@ namespace Zebble
             View = view;
             CreateSurfaceView();
             CreateVideoPlayer();
-
             View.Buffered.HandleOn(Thread.UI, () => SafeInvoke(() => { VideoPlayer.PrepareAsync(); IsVideoBuffered = true; }));
             View.PathChanged.HandleOn(Thread.UI, () => SafeInvoke(() => { if (View.AutoPlay) LoadVideo(); }));
             View.Started.HandleOn(Thread.UI, () => SafeInvoke(OnVideoStart));
@@ -37,7 +37,9 @@ namespace Zebble
             View.Stopped.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Stop)));
             View.SoughtBeginning.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.SeekToBegining)));
             View.Muted.HandleOn(Thread.UI, Mute);
-
+            View.Seeked.HandleOn(Thread.UI, (position) => VideoPlayer.SeekTo(position.Milliseconds));
+            View.GetCurrentTime = () => VideoPlayer.CurrentPosition.Milliseconds();
+            View.InitializeTimer();
             Prepared.Handle(HandleStateCommand);
         }
 
@@ -122,6 +124,7 @@ namespace Zebble
 
             mp.Looping = view.Loop;
             view.IsReady = true;
+            View.Duration = mp.Duration.Milliseconds();
 
             if (view.AutoBuffer) mp.Start();
 
@@ -161,16 +164,18 @@ namespace Zebble
             else Prepared.Raise(VideoState.Play).GetAwaiter();
         }
 
-        void LoadVideo()
+        async Task LoadVideo()
         {
             if (IsDead(out var view)) return;
 
             var source = view.Path;
             if (source.IsEmpty()) return;
-
+            if (View.IsYoutube(source))
+                source = await view.LoadYoutube(source);
+            View.LoadedPath = source;
             if (!IsSurfaceCreated)
             {
-                VideoSurfaceCreate.Raise(VideoState.Play);
+                await VideoSurfaceCreate.Raise(VideoState.Play);
                 return;
             }
 
