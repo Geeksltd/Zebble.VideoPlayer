@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Timers;
+using Xamarin.Essentials;
 using YoutubeExplode;
 
 namespace Zebble
@@ -92,7 +93,10 @@ namespace Zebble
 
         private void OnRaiseCurrentTime(object sender, ElapsedEventArgs e)
         {
-            TimeChanged.Raise(CurrentTime);
+            MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                TimeChanged.Raise(CurrentTime);
+            });
         }
 
         public override void Dispose()
