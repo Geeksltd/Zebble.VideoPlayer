@@ -1,14 +1,14 @@
 namespace Zebble
 {
+    using Olive;
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Runtime.InteropServices.WindowsRuntime;
     using System.Threading.Tasks;
     using Windows.Storage;
+    using Xamarin.Essentials;
     using controls = Windows.UI.Xaml.Controls;
     using media = Windows.UI.Xaml.Media;
-    using Olive;
 
     class UWPVideoViewer
     {
@@ -57,33 +57,52 @@ namespace Zebble
             var url = View.Path;
             if (url.IsEmpty()) return;
             if (View.IsYoutube(url))
-                url = await View.LoadYoutube(url);
-            View.LoadedPath = url;
-            if (url.IsUrl())
             {
-                if (View.AutoBuffer)
-                    await BufferVideo();
+                _ = Task.Run(async () =>
+                {
+                    url = await View.LoadYoutube(url);
+                    View.LoadedPath = url;
+                    await MainThread.InvokeOnMainThreadAsync(async () =>
+                    {
+                        if (View.AutoBuffer)
+                            await BufferVideo();
+
+                        Result.AutoPlay = View.AutoPlay;
+                        Result.IsLooping = View.Loop;
+                        Result.Loaded += (e, args) => View.LoadCompleted.Raise();
+                    });
+                });
             }
             else
             {
-                try
+                if (url.IsUrl())
                 {
-                    var file = Device.IO.File(url);
-                    var data = await file.ReadAllBytesAsync();
-                    var source = data.AsBuffer().AsStream().AsRandomAccessStream();
-                    Result.SetSource(source, string.Empty);
+                    if (View.AutoBuffer)
+                        await BufferVideo();
+                    View.LoadedPath = url;
+                }
+                else
+                {
+                    try
+                    {
+                        var file = Device.IO.File(url);
+                        var data = await file.ReadAllBytesAsync();
+                        var source = data.AsBuffer().AsStream().AsRandomAccessStream();
+                        Result.SetSource(source, string.Empty);
 
-                    View.VideoSize = await GetVideoSize(file: file);
+                        View.VideoSize = await GetVideoSize(file: file);
+                    }
+                    catch (Exception ex)
+                    {
+                        await Alert.Toast("Failed to show video: " + ex.Message);
+                    }
+                    View.LoadedPath = url;
                 }
-                catch (Exception ex)
-                {
-                    await Alert.Toast("Failed to show video: " + ex.Message);
-                }
+
+                Result.AutoPlay = View.AutoPlay;
+                Result.IsLooping = View.Loop;
+                Result.Loaded += (e, args) => View.LoadCompleted.Raise();
             }
-
-            Result.AutoPlay = View.AutoPlay;
-            Result.IsLooping = View.Loop;
-            Result.Loaded += (e, args) => View.LoadCompleted.Raise();
         }
 
         void Result_BufferingProgressChanged(object sender, Windows.UI.Xaml.RoutedEventArgs e)
