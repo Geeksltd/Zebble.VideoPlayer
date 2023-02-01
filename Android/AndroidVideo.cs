@@ -41,6 +41,7 @@ namespace Zebble
             View.GetCurrentTime = () => VideoPlayer.CurrentPosition.Milliseconds();
             View.InitializeTimer();
             Prepared.Handle(HandleStateCommand);
+            VideoPlayer.Info += VideoPlayer_Info;
         }
 
         void CreateSurfaceView()
@@ -178,7 +179,6 @@ namespace Zebble
                 await VideoSurfaceCreate.Raise(VideoState.Play);
                 return;
             }
-
             if (IO.IsAbsolute(source)) source = "file://" + source;
             else if (!source.IsUrl()) source = "file://" + IO.AbsolutePath(source);
             try
@@ -193,6 +193,11 @@ namespace Zebble
             {
                 Log.For(this).Error(ex, "This error is raised without seemingly affecting anything!");
             }
+        }
+
+        private void VideoPlayer_Info(object sender, MediaPlayer.InfoEventArgs e)
+        {
+            View.LoadCompleted.Raise();
         }
 
         void SafeInvoke(Action action)

@@ -149,7 +149,7 @@ namespace Zebble
                 UIGraphics.EndImageContext();
             }
 
-            View.LoadCompleted.Raise();
+            await View.LoadCompleted.Raise();
         }
 
         void InitializePlayerItem()

@@ -32,6 +32,7 @@ namespace Zebble
 
             Result = new controls.MediaElement { Stretch = media.Stretch.Uniform };
             Result.MediaEnded += (e, args) => View.FinishedPlaying.RaiseOn(Thread.UI);
+            Result.MediaOpened += MediaOpened;
         }
 
         public async Task<controls.MediaElement> Render()
@@ -69,7 +70,6 @@ namespace Zebble
 
                         Result.AutoPlay = View.AutoPlay;
                         Result.IsLooping = View.Loop;
-                        Result.Loaded += (e, args) => View.LoadCompleted.Raise();
                     });
                 });
             }
@@ -101,8 +101,12 @@ namespace Zebble
 
                 Result.AutoPlay = View.AutoPlay;
                 Result.IsLooping = View.Loop;
-                Result.Loaded += (e, args) => View.LoadCompleted.Raise();
             }
+        }
+
+        private void MediaOpened(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        {
+             View.LoadCompleted.Raise();
         }
 
         void Result_BufferingProgressChanged(object sender, Windows.UI.Xaml.RoutedEventArgs e)
