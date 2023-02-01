@@ -32,6 +32,7 @@ namespace Zebble
 
             Result = new controls.MediaElement { Stretch = media.Stretch.Uniform };
             Result.MediaEnded += (e, args) => View.FinishedPlaying.RaiseOn(Thread.UI);
+            Result.MediaOpened += MediaOpened;
         }
 
         public async Task<controls.MediaElement> Render()
@@ -56,8 +57,6 @@ namespace Zebble
         {
             var url = View.Path;
             if (url.IsEmpty()) return;
-            Result.MediaOpened -= MediaOpened;
-            Result.MediaOpened += MediaOpened;
             if (View.IsYoutube(url))
             {
                 _ = Task.Run(async () =>
