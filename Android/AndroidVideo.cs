@@ -178,7 +178,8 @@ namespace Zebble
                 await VideoSurfaceCreate.Raise(VideoState.Play);
                 return;
             }
-
+            VideoPlayer.Info -= VideoPlayer_Info;
+            VideoPlayer.Info += VideoPlayer_Info;
             if (IO.IsAbsolute(source)) source = "file://" + source;
             else if (!source.IsUrl()) source = "file://" + IO.AbsolutePath(source);
             try
@@ -193,6 +194,11 @@ namespace Zebble
             {
                 Log.For(this).Error(ex, "This error is raised without seemingly affecting anything!");
             }
+        }
+
+        private void VideoPlayer_Info(object sender, MediaPlayer.InfoEventArgs e)
+        {
+            View.LoadCompleted.Raise();
         }
 
         void SafeInvoke(Action action)

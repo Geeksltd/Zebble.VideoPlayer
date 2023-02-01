@@ -56,6 +56,8 @@ namespace Zebble
         {
             var url = View.Path;
             if (url.IsEmpty()) return;
+            Result.MediaOpened -= MediaOpened;
+            Result.MediaOpened += MediaOpened;
             if (View.IsYoutube(url))
             {
                 _ = Task.Run(async () =>
@@ -69,7 +71,6 @@ namespace Zebble
 
                         Result.AutoPlay = View.AutoPlay;
                         Result.IsLooping = View.Loop;
-                        Result.Loaded += (e, args) => View.LoadCompleted.Raise();
                     });
                 });
             }
@@ -101,8 +102,12 @@ namespace Zebble
 
                 Result.AutoPlay = View.AutoPlay;
                 Result.IsLooping = View.Loop;
-                Result.Loaded += (e, args) => View.LoadCompleted.Raise();
             }
+        }
+
+        private void MediaOpened(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        {
+             View.LoadCompleted.Raise();
         }
 
         void Result_BufferingProgressChanged(object sender, Windows.UI.Xaml.RoutedEventArgs e)
