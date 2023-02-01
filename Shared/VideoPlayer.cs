@@ -77,7 +77,7 @@ namespace Zebble
 
         public void Seek(TimeSpan timeSpan) => Seeked.Raise(timeSpan);
 
-        public TimeSpan? Duration { get; set; }
+        public TimeSpan? Duration { get; internal set; }
         public TimeSpan? CurrentTime => GetCurrentTime();
 
         System.Timers.Timer CurrentTimeChangedTimer;
