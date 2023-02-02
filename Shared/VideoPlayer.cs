@@ -30,7 +30,8 @@ namespace Zebble
 
         public VideoQuality Quality { get; set; } = VideoQuality.Medium;
         public Size VideoSize { get; set; } = new Size(0, 0);
-
+        public TimeSpan? StartPosition { get; set; }
+        public TimeSpan? EndPosition { get; set; }
         public string Path
         {
             get => path;
@@ -96,7 +97,25 @@ namespace Zebble
             MainThread.InvokeOnMainThreadAsync(() =>
             {
                 TimeChanged.Raise(CurrentTime);
+                if (EndPosition.HasValue && CurrentTime.HasValue && CurrentTime.Value > EndPosition.Value)
+                {
+                    if (Loop)
+                    {
+                        if (StartPosition.HasValue)
+                        {
+                            Seek(StartPosition.Value);
+                        }
+                    }
+                }
             });
+        }
+
+        internal void OnLoaded()
+        {
+            if (StartPosition.HasValue)
+            {
+                Seek(StartPosition.Value);
+            }
         }
 
         public override void Dispose()

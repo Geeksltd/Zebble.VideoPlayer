@@ -198,6 +198,7 @@ namespace Zebble
         private void VideoPlayer_Info(object sender, MediaPlayer.InfoEventArgs e)
         {
             View.LoadCompleted.Raise();
+            View.OnLoaded();
         }
 
         void SafeInvoke(Action action)
