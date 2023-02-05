@@ -107,6 +107,7 @@ namespace Zebble
         private void MediaOpened(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
              View.LoadCompleted.Raise();
+             View.OnLoaded();
         }
 
         void Result_BufferingProgressChanged(object sender, Windows.UI.Xaml.RoutedEventArgs e)

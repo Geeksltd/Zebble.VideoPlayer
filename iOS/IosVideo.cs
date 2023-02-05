@@ -150,6 +150,7 @@ namespace Zebble
             }
 
             await View.LoadCompleted.Raise();
+            View.OnLoaded();
         }
 
         void InitializePlayerItem()
