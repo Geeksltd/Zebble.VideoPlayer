@@ -8,6 +8,7 @@ namespace Zebble
     using static Zebble.VideoPlayer;
     using Olive;
     using System.Threading.Tasks;
+    using static Xamarin.Essentials.Permissions;
 
     class IosVideo : UIView
     {
@@ -187,10 +188,20 @@ namespace Zebble
                 });
             }
 
-            PlayerLayer.VideoGravity = AVLayerVideoGravity.ResizeAspect;
+            PlayerLayer.VideoGravity = GetStretch();
 
             PlayerLayer.Frame = Bounds;
             Layer.AddSublayer(PlayerLayer);
+        }
+
+        AVLayerVideoGravity GetStretch()
+        {
+            switch (View.BackgroundImageStretch)
+            {
+                case Stretch.Fill: return AVLayerVideoGravity.Resize;
+                case Stretch.AspectFill: return AVLayerVideoGravity.ResizeAspectFill;
+                default: return AVLayerVideoGravity.ResizeAspect;
+            }
         }
 
         void BufferVideo()

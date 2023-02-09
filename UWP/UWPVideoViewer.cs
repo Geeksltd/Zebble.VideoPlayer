@@ -30,7 +30,7 @@ namespace Zebble
             View.GetCurrentTime = () => Result.Position;
             View.InitializeTimer();
 
-            Result = new controls.MediaElement { Stretch = media.Stretch.Uniform };
+            Result = new controls.MediaElement { Stretch = view.BackgroundImageStretch.Render() };
             Result.MediaEnded += (e, args) => View.FinishedPlaying.RaiseOn(Thread.UI);
             Result.MediaOpened += MediaOpened;
         }

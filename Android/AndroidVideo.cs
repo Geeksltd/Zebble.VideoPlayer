@@ -29,6 +29,13 @@ namespace Zebble
             View = view;
             CreateSurfaceView();
             CreateVideoPlayer();
+
+            ScaleX = View.ScaleX;
+            ScaleY = View.ScaleY;
+            Rotation = View.Rotation;
+            RotationX = -View.RotationX;
+            RotationY = View.RotationY;
+
             View.Buffered.HandleOn(Thread.UI, () => SafeInvoke(() => { VideoPlayer.PrepareAsync(); IsVideoBuffered = true; }));
             View.PathChanged.HandleOn(Thread.UI, () => SafeInvoke(() => { if (View.AutoPlay) LoadVideo(); }));
             View.Started.HandleOn(Thread.UI, () => SafeInvoke(OnVideoStart));
@@ -81,7 +88,6 @@ namespace Zebble
             if (IsSurfaceCreated)
             {
                 VideoSurfaceCreate.Handle(_ => LoadVideo());
-
                 if (view.AutoPlay) LoadVideo();
             }
         }
@@ -127,12 +133,12 @@ namespace Zebble
             view.IsReady = true;
             View.Duration = mp.Duration.Milliseconds();
 
-            if (view.AutoBuffer) mp.Start();
-
             if (view.IsMuted) mp.SetVolume(0, 0);
             else mp.SetVolume(1, 1);
 
             UpdateLayoutSize();
+
+            if (view.AutoBuffer) mp.Start();
         }
 
         void MediaPlayer.IOnVideoSizeChangedListener.OnVideoSizeChanged(MediaPlayer mp, int width, int height)
@@ -140,21 +146,23 @@ namespace Zebble
 
         void UpdateLayoutSize()
         {
-            var screenWidth = Screen.DisplaySetting.HardwareWidth;
-            var screenHeight = Screen.DisplaySetting.HardwareHeight;
+            var contentSize = new Size(VideoPlayer.VideoWidth, VideoPlayer.VideoHeight);
+            var frame = new Size(Scale.ToDevice(View.ActualWidth + 2), Scale.ToDevice(View.ActualHeight + 2));
 
-            var videoWidth = VideoPlayer.VideoWidth;
-            var videoHeight = VideoPlayer.VideoHeight;
+            if (View.BackgroundImageStretch == Stretch.Fill)
+                contentSize = frame;
+            if (View.BackgroundImageStretch == Stretch.AspectFill)
+            {
+                var enlarge = 1 + Math.Abs(contentSize.Width / frame.Width - contentSize.Height / frame.Height);
+                contentSize = contentSize.Scale(10).LimitTo(frame).Scale(enlarge);
+            }
+            else contentSize = contentSize.Scale(10).LimitTo(frame);
 
             var newParams = VideoSurface.LayoutParameters;
-
-            var ratio = Math.Min((float)screenWidth / videoWidth, (float)screenHeight / videoHeight);
-
-            newParams.Width = (int)(videoWidth * ratio);
-            newParams.Height = (int)(videoHeight * ratio);
-
+            newParams.Width = (int)contentSize.Width;
+            newParams.Height = (int)contentSize.Height;
             VideoSurface.LayoutParameters = newParams;
-            SetGravity(GravityFlags.Center);
+            SetGravity(GravityFlags.Center | GravityFlags.ClipHorizontal | GravityFlags.ClipVertical);
         }
 
         void OnVideoStart()
