@@ -77,9 +77,8 @@ namespace Zebble
             {
                 if (url.IsUrl())
                 {
-                    if (View.AutoBuffer)
-                        await BufferVideo();
                     View.LoadedPath = url;
+                    if (View.AutoBuffer) await BufferVideo();
                 }
                 else
                 {
@@ -106,8 +105,8 @@ namespace Zebble
 
         private void MediaOpened(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
-             View.LoadCompleted.Raise();
-             View.OnLoaded();
+            View.LoadCompleted.Raise();
+            View.OnLoaded();
         }
 
         void Result_BufferingProgressChanged(object sender, Windows.UI.Xaml.RoutedEventArgs e)
