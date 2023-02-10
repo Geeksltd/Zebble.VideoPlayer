@@ -1,13 +1,13 @@
 namespace Zebble
 {
+    using System;
+    using System.Threading.Tasks;
     using Android.Graphics;
     using Android.Media;
     using Android.Runtime;
     using Android.Views;
     using Android.Widget;
     using Olive;
-    using System;
-    using System.Threading.Tasks;
     using Zebble.Device;
     using static Zebble.VideoPlayer;
 
@@ -36,7 +36,8 @@ namespace Zebble
             RotationX = -View.RotationX;
             RotationY = View.RotationY;
 
-            View.Buffered.HandleOn(Thread.UI, () => SafeInvoke(() => { VideoPlayer.PrepareAsync(); IsVideoBuffered = true; }));
+            View.Buffered
+                .HandleOn(Thread.UI, () => SafeInvoke(() => { VideoPlayer.PrepareAsync(); IsVideoBuffered = true; }));
             View.PathChanged.HandleOn(Thread.UI, () => SafeInvoke(() => { if (View.AutoPlay) LoadVideo(); }));
             View.Started.HandleOn(Thread.UI, () => SafeInvoke(OnVideoStart));
             View.Paused.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Pause)));
@@ -151,6 +152,7 @@ namespace Zebble
 
             if (View.BackgroundImageStretch == Stretch.Fill)
                 contentSize = frame;
+
             if (View.BackgroundImageStretch == Stretch.AspectFill)
             {
                 var enlarge = 1 + Math.Abs(contentSize.Width / frame.Width - contentSize.Height / frame.Height);
@@ -179,16 +181,21 @@ namespace Zebble
 
             var source = view.Path;
             if (source.IsEmpty()) return;
+
             if (View.IsYoutube(source))
                 source = await view.LoadYoutube(source);
+
             View.LoadedPath = source;
+
             if (!IsSurfaceCreated)
             {
                 await VideoSurfaceCreate.Raise(VideoState.Play);
                 return;
             }
+
             if (IO.IsAbsolute(source)) source = "file://" + source;
             else if (!source.IsUrl()) source = "file://" + IO.AbsolutePath(source);
+
             try
             {
                 VideoPlayer.Reset();
@@ -203,7 +210,7 @@ namespace Zebble
             }
         }
 
-        private void VideoPlayer_Info(object sender, MediaPlayer.InfoEventArgs e)
+        void VideoPlayer_Info(object sender, MediaPlayer.InfoEventArgs e)
         {
             View.LoadCompleted.Raise();
             View.OnLoaded();
@@ -226,15 +233,15 @@ namespace Zebble
         void Mute(VideoPlayer currentView)
         {
             if (IsDead(out var view)) view = currentView;
-            if (view.IsMuted)
-                VideoPlayer.SetVolume(0, 0);
-            else
-                VideoPlayer.SetVolume(1, 1);
+
+            if (view.IsMuted) VideoPlayer.SetVolume(0, 0);
+            else VideoPlayer.SetVolume(1, 1);
         }
 
         void OnVideoSizeChanged(object sender, EventArgs args)
         {
             if (IsDead(out var view)) return;
+
             if (sender is MediaPlayer media)
             {
                 if (view.VideoSize.Width == 0)

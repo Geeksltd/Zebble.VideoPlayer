@@ -1,7 +1,7 @@
 namespace Zebble
 {
-    using Android.Runtime;
     using System.Threading.Tasks;
+    using Android.Runtime;
 
     class VideoPlayerRenderer : INativeRenderer
     {

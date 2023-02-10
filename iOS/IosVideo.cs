@@ -1,29 +1,25 @@
 namespace Zebble
 {
-    using AVFoundation;
-    using Foundation;
     using System;
     using System.Linq;
+    using System.Threading.Tasks;
+    using AVFoundation;
+    using CoreMedia;
+    using Foundation;
+    using Olive;
     using UIKit;
     using static Zebble.VideoPlayer;
-    using Olive;
-    using System.Threading.Tasks;
-    using static Xamarin.Essentials.Permissions;
 
     class IosVideo : UIView
     {
         VideoPlayer View;
         AVAsset Asset;
-        AVUrlAsset UrlAsset;
-        AVPlayerItem PlayerItem;
         AVPlayer Player;
+        AVPlayerItem PlayerItem;
         AVPlayerLayer PlayerLayer;
-
         AVPlayerLooper PlayerLooper;
-        AVQueuePlayer QueuePlayer;
 
-        IDisposable DidPlayToEndTimeObservation;
-        IDisposable StatusObservation;
+        IDisposable DidPlayToEndTimeObservation, StatusObservation;
 
         Preparedhandler Prepared = new();
 
@@ -31,62 +27,45 @@ namespace Zebble
         {
             View = view;
 
-            View.Width.Changed.HandleOn(Thread.UI, OnFrameChanged);
-            View.Height.Changed.HandleOn(Thread.UI, OnFrameChanged);
-            View.Buffered.HandleOn(Thread.UI, BufferVideo);
-            View.PathChanged.HandleOn(Thread.UI, () => { CoreDispose(); LoadVideo(); });
-            View.Started.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Play));
-            View.Paused.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Pause));
-            View.Resumed.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Resume));
-            View.Stopped.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Stop));
-            View.SoughtBeginning.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.SeekToBegining));
-            View.Muted.HandleOn(Thread.UI, Mute);
-            View.Seeked.HandleOn(Thread.UI, (position) => Player.Seek(CoreMedia.CMTime.FromSeconds(position.Seconds, 0)));
-            View.GetCurrentTime = () => ((int)Player.CurrentTime.Seconds).Seconds();
-            View.InitializeTimer();
+            view.Width.Changed.HandleOn(Thread.UI, OnFrameChanged);
+            view.Height.Changed.HandleOn(Thread.UI, OnFrameChanged);
+            view.Buffered.HandleOn(Thread.UI, BufferVideo);
+            view.PathChanged.HandleOn(Thread.UI, () => { CoreDispose(); LoadVideo(); });
+            view.Started.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Play));
+            view.Paused.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Pause));
+            view.Resumed.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Resume));
+            view.Stopped.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Stop));
+            view.SoughtBeginning.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.SeekToBegining));
+            view.Muted.HandleOn(Thread.UI, Mute);
+            view.Seeked.HandleOn(Thread.UI, (position) => Player.Seek(CMTime.FromSeconds(position.Seconds, 0)));
+
+            view.GetCurrentTime = () => ((int)Player.CurrentTime.Seconds).Seconds();
+            view.InitializeTimer();
 
             LoadVideo();
         }
 
         void OnFrameChanged()
         {
-            if (IsDead(out var view)) return;
-            if (PlayerLayer == null) return;
+            if (IsDead(out var view) || PlayerLayer == null) return;
 
-            var frame = View.GetFrame();
-
-            Frame = frame;
+            Frame = view.GetFrame();
             PlayerLayer.Frame = Bounds;
         }
 
         void Mute()
         {
-            if (IsDead(out var _)) return;
-
-            if (View.Loop)
-                QueuePlayer.Muted = View.IsMuted;
-            else
-                Player.Muted = View.IsMuted;
+            if (!IsDead(out var view)) Player.Muted = view.IsMuted;
         }
 
         void Resume()
         {
-            if (IsDead(out _)) return;
-
-            if (View.Loop)
-                QueuePlayer?.Play();
-            else
-                Player?.Play();
+            if (!IsDead(out _)) Player?.Play();
         }
 
         void SeekBeginning()
         {
-            if (IsDead(out _)) return;
-
-            if (View.Loop)
-                QueuePlayer?.Seek(CoreMedia.CMTime.Zero);
-            else
-                Player?.Seek(CoreMedia.CMTime.Zero);
+            if (!IsDead(out _)) Player?.Seek(CMTime.Zero);
         }
 
         void Play()
@@ -97,99 +76,61 @@ namespace Zebble
 
         void Pause()
         {
-            if (IsDead(out _)) return;
-
-            if (View.Loop)
-                QueuePlayer?.Pause();
-            else
-                Player?.Pause();
+            if (!IsDead(out _)) Player?.Pause();
         }
 
         void Stop()
         {
-            if (IsDead(out _)) return;
-
-            if (View.Loop)
-                QueuePlayer?.Pause();
-            else
-                Player?.Pause();
+            if (!IsDead(out _)) Player?.Pause();
         }
 
         async Task LoadVideo()
         {
-            if (IsDead(out var _)) return;
+            if (IsDead(out var view)) return;
 
-            string url = View.Path;
-            if (url.IsEmpty()) return;
-            if (View.IsYoutube(url))
-                url = await View.LoadYoutube(url);
-            View.LoadedPath = url;
-            if (url.IsUrl())
-            {
-                if (View.AutoBuffer) BufferVideo();
-            }
-            else
-            {
-                url = "file://" + Device.IO.File(url).FullName;
-                var nsUrl = url.ToNsUrl();
-                // It's possible for a non-null url, NSUrl return a null value
-                if (nsUrl == null) return;
+            if (view.Path.IsEmpty()) return;
+            view.LoadedPath = view.Path;
 
-                UIGraphics.BeginImageContext(new CoreGraphics.CGSize(1, 1));
+            if (view.IsYoutube(view.Path)) view.LoadedPath = await view.LoadYoutube(view.Path);
+            else if (!view.Path.IsUrl()) view.LoadedPath = "file://" + Device.IO.File(view.Path).FullName;
 
-                Frame = View.GetFrame();
+            if (view.AutoBuffer || view.AutoPlay) BufferVideo();
 
-                Asset = AVAsset.FromUrl(nsUrl);
-
-                SetNaturalVideoSize(asset: Asset, urlAsset: null);
-
-                PlayerItem = new AVPlayerItem(Asset);
-
-                InitializePlayerItem();
-
-                UIGraphics.EndImageContext();
-            }
-
-            await View.LoadCompleted.Raise();
-            View.OnLoaded();
+            await view.LoadCompleted.Raise();
+            view.OnLoaded();
         }
 
-        void InitializePlayerItem()
+        void PlayedToEnd()
         {
-            DidPlayToEndTimeObservation = AVPlayerItem.Notifications.ObserveDidPlayToEndTime(PlayerItem, (_, _) =>
-            {
-                if (IsDead(out var _)) return;
-                View.FinishedPlaying.RaiseOn(Thread.UI);
-            });
+            if (IsDead(out var view)) return;
 
-            if (View.Loop)
-            {
-                QueuePlayer = new AVQueuePlayer();
-                PlayerLayer = AVPlayerLayer.FromPlayer(QueuePlayer);
-                PlayerLooper = new AVPlayerLooper(QueuePlayer, PlayerItem, CoreMedia.CMTimeRange.InvalidRange);
+            if (view.Loop) Play();
+            else view.FinishedPlaying.RaiseOn(Thread.UI);
+        }
 
+        void ItemStatusChanged()
+        {
+            if (IsDead(out var view)) return;
+
+            if (PlayerItem?.Status == AVPlayerItemStatus.ReadyToPlay)
+            {
+                view.IsReady = true;
                 OnReady();
-                View.IsReady = true;
             }
-            else
-            {
-                Player = new AVPlayer(PlayerItem);
-                PlayerLayer = AVPlayerLayer.FromPlayer(Player);
+            else view.IsReady = false;
+        }
 
-                StatusObservation = PlayerItem.AddObserver("status", 0, _ =>
-                {
-                    if (IsDead(out var _)) return;
-                    if (PlayerItem?.Status == AVPlayerItemStatus.ReadyToPlay)
-                    {
-                        View.IsReady = true;
-                        OnReady();
-                    }
-                    else View.IsReady = false;
-                });
-            }
+        void InitializePlayer()
+        {
+            PlayerItem = new AVPlayerItem(Asset);
 
+            DidPlayToEndTimeObservation?.Dispose();
+            DidPlayToEndTimeObservation = AVPlayerItem.Notifications.ObserveDidPlayToEndTime(PlayerItem, (_, _) => PlayedToEnd());
+            StatusObservation = PlayerItem.AddObserver("status", 0, _ => ItemStatusChanged());
+
+            Player = new AVPlayer(PlayerItem);
+            PlayerLayer = AVPlayerLayer.FromPlayer(Player);
             PlayerLayer.VideoGravity = GetStretch();
-
             PlayerLayer.Frame = Bounds;
             Layer.AddSublayer(PlayerLayer);
         }
@@ -206,42 +147,45 @@ namespace Zebble
 
         void BufferVideo()
         {
-            if (IsDead(out var _)) return;
+            if (IsDead(out var view)) return;
 
-            string url = View.LoadedPath;
-            if (url.IsEmpty()) return;
+            var nsUrl = view.LoadedPath.ToNsUrl();
+            if (nsUrl == null) return; // It's possible for a non-null url, NSUrl return a null value
 
-            var nsUrl = url.ToNsUrl();
-            // It's possible for a non-null url, NSUrl return a null value
-            if (nsUrl == null) return;
+            try
+            {
+                Frame = view.GetFrame();
+                Asset?.Dispose();
+                Asset = AVAsset.FromUrl(nsUrl);
 
-            UIGraphics.BeginImageContext(new CoreGraphics.CGSize(1, 1));
+                UIGraphics.BeginImageContext(new CoreGraphics.CGSize(1, 1));
 
-            Frame = View.GetFrame();
+                var track = Asset?.TracksWithMediaType(AVMediaType.Video)?.FirstOrDefault();
 
-            UrlAsset = new AVUrlAsset(nsUrl);
+                if (track != null)
+                {
+                    var size = track.PreferredTransform.TransformSize(track.NaturalSize);
+                    view.VideoSize = new Size((float)size.Width, (float)size.Height);
+                }
 
-            SetNaturalVideoSize(asset: null, urlAsset: UrlAsset);
+                InitializePlayer();
 
-            PlayerItem = new AVPlayerItem(UrlAsset);
-
-            InitializePlayerItem();
-
-            UIGraphics.EndImageContext();
+                UIGraphics.EndImageContext();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToLogString());
+            }
         }
 
         void OnReady()
         {
-            if (IsDead(out _)) return;
+            if (IsDead(out var view)) return;
 
-            if (View.AutoPlay)
-            {
-                if (View.Loop)
-                    QueuePlayer.Play();
-                else
-                    Player.Play();
-            }
-            View.Duration = ((int)Player.CurrentItem.Duration.Seconds).Seconds();
+            if (view.AutoPlay) Player.Play();
+
+            view.Duration = ((int)PlayerItem.Duration.Seconds).Seconds();
+
             Prepared?.Handle(result =>
             {
                 if (IsDead(out var _)) return;
@@ -269,23 +213,6 @@ namespace Zebble
             });
         }
 
-        void SetNaturalVideoSize(AVAsset asset = null, AVUrlAsset urlAsset = null)
-        {
-            if (asset == null && urlAsset == null) return;
-
-            var tracks = (asset ?? urlAsset).TracksWithMediaType(AVMediaType.Video);
-            if (tracks.None()) return;
-
-            var track = tracks.First();
-
-            var size = track.NaturalSize;
-            var txf = track.PreferredTransform;
-
-            var videoSize = txf.TransformSize(size);
-
-            View.VideoSize = new Size((float)videoSize.Width, (float)videoSize.Height);
-        }
-
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -310,17 +237,11 @@ namespace Zebble
             Asset?.Dispose();
             Asset = null;
 
-            UrlAsset?.Dispose();
-            UrlAsset = null;
-
             PlayerItem?.Dispose();
             PlayerItem = null;
 
             Player?.Dispose();
             Player = null;
-
-            QueuePlayer?.Dispose();
-            QueuePlayer = null;
 
             PlayerLooper?.DisableLooping();
             PlayerLooper?.Dispose();

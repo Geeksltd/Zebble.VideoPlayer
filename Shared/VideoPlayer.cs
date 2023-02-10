@@ -1,9 +1,9 @@
-﻿using Olive;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Timers;
+using Olive;
 using Xamarin.Essentials;
 using YoutubeExplode;
 
@@ -79,24 +79,25 @@ namespace Zebble
         public void Seek(TimeSpan timeSpan) => Seeked.Raise(timeSpan);
 
         public TimeSpan? Duration { get; internal set; }
-        public TimeSpan? CurrentTime => GetCurrentTime();
+
+        public TimeSpan? CurrentTime => GetCurrentTime?.Invoke() ?? TimeSpan.Zero;
 
         System.Timers.Timer CurrentTimeChangedTimer;
         internal void InitializeTimer()
         {
-            if (CurrentTimeChangedTimer != null)
-                return;
+            if (CurrentTimeChangedTimer != null) return;
             CurrentTimeChangedTimer = new Timer();
             CurrentTimeChangedTimer.Elapsed += OnRaiseCurrentTime;
             CurrentTimeChangedTimer.Interval = 1000;
             CurrentTimeChangedTimer.Enabled = true;
         }
 
-        private void OnRaiseCurrentTime(object sender, ElapsedEventArgs e)
+        void OnRaiseCurrentTime(object sender, ElapsedEventArgs e)
         {
             MainThread.InvokeOnMainThreadAsync(() =>
             {
                 TimeChanged.Raise(CurrentTime);
+
                 if (EndPosition.HasValue && CurrentTime.HasValue && CurrentTime.Value > EndPosition.Value)
                 {
                     if (Loop)
@@ -128,9 +129,8 @@ namespace Zebble
 
         internal bool IsYoutube(string url)
         {
-            string host = url.AsUri()?.Host;
-            if (host.IsEmpty())
-                return false;
+            var host = url.AsUri()?.Host;
+            if (host.IsEmpty()) return false;
             return host.EndsWith("youtube.com", StringComparison.OrdinalIgnoreCase) || host.EndsWith("youtu.be", StringComparison.OrdinalIgnoreCase);
         }
 
@@ -142,7 +142,8 @@ namespace Zebble
                 var video = await youtube.Videos.GetAsync(url);
                 var streamManifest = await youtube.Videos.Streams.GetManifestAsync(video.Id);
                 var orderedStreams = streamManifest.GetMuxedStreams().OrderByDescending(x => x.ToString().Contains("mp4", StringComparison.OrdinalIgnoreCase));
-                string videoUrl = "";
+                var videoUrl = "";
+
                 switch (Quality)
                 {
                     case VideoQuality.Low:
@@ -161,10 +162,11 @@ namespace Zebble
                             break;
                         }
                 }
+
                 if (videoUrl.IsEmpty())
                     videoUrl = orderedStreams.FirstOrDefault()?.Url;
-                if (videoUrl.IsEmpty())
-                    return url;
+
+                if (videoUrl.IsEmpty()) return url;
                 return videoUrl;
             }
 
