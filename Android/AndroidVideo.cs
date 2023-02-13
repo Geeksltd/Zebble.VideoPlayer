@@ -155,10 +155,15 @@ namespace Zebble
 
             if (View.BackgroundImageStretch == Stretch.AspectFill)
             {
-                var enlarge = 1 + Math.Abs(contentSize.Width / frame.Width - contentSize.Height / frame.Height);
-                contentSize = contentSize.Scale(10).LimitTo(frame).Scale(enlarge);
+                double wRatio = frame.Width / contentSize.Width;
+                double hRatio = frame.Height / contentSize.Height;
+                double multiplier = Math.Max(wRatio, hRatio);
+                int w = (int)(contentSize.Width * multiplier);
+                int h = (int)(contentSize.Height * multiplier);
+                contentSize = new Size(w, h);
             }
-            else contentSize = contentSize.Scale(10).LimitTo(frame);
+            else
+                contentSize = contentSize.Scale(10).LimitTo(frame);
 
             var newParams = VideoSurface.LayoutParameters;
             newParams.Width = (int)contentSize.Width;
