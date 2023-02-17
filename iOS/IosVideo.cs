@@ -37,12 +37,12 @@ namespace Zebble
             view.Stopped.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Stop));
             view.SoughtBeginning.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.SeekToBegining));
             view.Muted.HandleOn(Thread.UI, Mute);
-            view.Seeked.HandleOn(Thread.UI, (position) => Player.Seek(CMTime.FromSeconds(position.Seconds, 0)));
+            view.Seeked.HandleOn(Thread.UI, (position) => Player?.Seek(CMTime.FromSeconds(position.Seconds, 0)));
 
-            view.GetCurrentTime = () => ((int)Player.CurrentTime.Seconds).Seconds();
+            view.GetCurrentTime = () => TimeSpan.FromSeconds(Player?.CurrentTime.Seconds ?? 0);
             view.InitializeTimer();
 
-            LoadVideo();
+            LoadVideo().RunInParallel();
         }
 
         void OnFrameChanged()
