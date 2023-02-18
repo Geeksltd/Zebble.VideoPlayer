@@ -30,24 +30,23 @@ namespace Zebble
             CreateSurfaceView();
             CreateVideoPlayer();
 
-            ScaleX = View.ScaleX;
-            ScaleY = View.ScaleY;
-            Rotation = View.Rotation;
-            RotationX = -View.RotationX;
-            RotationY = View.RotationY;
+            ScaleX = view.ScaleX;
+            ScaleY = view.ScaleY;
+            Rotation = view.Rotation;
+            RotationX = -view.RotationX;
+            RotationY = view.RotationY;
 
-            View.Buffered
-                .HandleOn(Thread.UI, () => SafeInvoke(() => { VideoPlayer.PrepareAsync(); IsVideoBuffered = true; }));
-            View.PathChanged.HandleOn(Thread.UI, () => SafeInvoke(() => { if (View.AutoPlay) LoadVideo(); }));
-            View.Started.HandleOn(Thread.UI, () => SafeInvoke(OnVideoStart));
-            View.Paused.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Pause)));
-            View.Resumed.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Play)));
-            View.Stopped.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Stop)));
-            View.SoughtBeginning.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.SeekToBegining)));
-            View.Muted.HandleOn(Thread.UI, Mute);
-            View.Seeked.HandleOn(Thread.UI, (position) => VideoPlayer.SeekTo(position.Milliseconds));
-            View.GetCurrentTime = () => VideoPlayer.CurrentPosition.Milliseconds();
-            View.InitializeTimer();
+            view.Buffered.HandleOn(Thread.UI, () => SafeInvoke(() => { VideoPlayer.PrepareAsync(); IsVideoBuffered = true; }));
+            view.PathChanged.HandleOn(Thread.UI, () => SafeInvoke(() => { if (view.AutoPlay) LoadVideo(); }));
+            view.Started.HandleOn(Thread.UI, () => SafeInvoke(OnVideoStart));
+            view.Paused.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Pause)));
+            view.Resumed.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Play)));
+            view.Stopped.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Stop)));
+            view.SoughtBeginning.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.SeekToBegining)));
+            view.Muted.HandleOn(Thread.UI, Mute);
+            view.Seeked.HandleOn(Thread.UI, (position) => VideoPlayer.SeekTo(position.Milliseconds));
+            view.GetCurrentTime = () => VideoPlayer.CurrentPosition.Milliseconds();
+            view.InitializeTimer();
             Prepared.Handle(HandleStateCommand);
             VideoPlayer.Info += VideoPlayer_Info;
         }
@@ -132,7 +131,7 @@ namespace Zebble
 
             mp.Looping = view.Loop;
             view.IsReady = true;
-            View.Duration = mp.Duration.Milliseconds();
+            view.Duration = mp.Duration.Milliseconds();
 
             if (view.IsMuted) mp.SetVolume(0, 0);
             else mp.SetVolume(1, 1);
@@ -147,13 +146,15 @@ namespace Zebble
 
         void UpdateLayoutSize()
         {
+            if (IsDead(out var view)) return;
+            
             var contentSize = new Size(VideoPlayer.VideoWidth, VideoPlayer.VideoHeight);
-            var frame = new Size(Scale.ToDevice(View.ActualWidth + 2), Scale.ToDevice(View.ActualHeight + 2));
+            var frame = new Size(Scale.ToDevice(view.ActualWidth + 2), Scale.ToDevice(view.ActualHeight + 2));
 
-            if (View.BackgroundImageStretch == Stretch.Fill)
+            if (view.BackgroundImageStretch == Stretch.Fill)
                 contentSize = frame;
 
-            if (View.BackgroundImageStretch == Stretch.AspectFill)
+            if (view.BackgroundImageStretch == Stretch.AspectFill)
             {
                 double wRatio = frame.Width / contentSize.Width;
                 double hRatio = frame.Height / contentSize.Height;
@@ -187,10 +188,10 @@ namespace Zebble
             var source = view.Path;
             if (source.IsEmpty()) return;
 
-            if (View.IsYoutube(source))
+            if (view.IsYoutube(source))
                 source = await view.LoadYoutube(source);
 
-            View.LoadedPath = source;
+            view.LoadedPath = source;
 
             if (!IsSurfaceCreated)
             {
@@ -217,8 +218,9 @@ namespace Zebble
 
         void VideoPlayer_Info(object sender, MediaPlayer.InfoEventArgs e)
         {
-            View.LoadCompleted.Raise();
-            View.OnLoaded();
+            if (IsDead(out var view)) return;
+            view.LoadCompleted.Raise();
+            view.OnLoaded();
         }
 
         void SafeInvoke(Action action)
@@ -259,12 +261,13 @@ namespace Zebble
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && VideoPlayer != null)
+            var vp = VideoPlayer;
+            if (disposing && vp != null)
             {
-                VideoPlayer.Completion -= OnCompletion;
-                VideoPlayer.VideoSizeChanged -= OnVideoSizeChanged;
-                VideoPlayer.Release();
-                VideoPlayer.Dispose();
+                vp.Completion -= OnCompletion;
+                vp.VideoSizeChanged -= OnVideoSizeChanged;
+                vp.Release();
+                vp.Dispose();
                 VideoPlayer = null;
                 View = null;
             }
