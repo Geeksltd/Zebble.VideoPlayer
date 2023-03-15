@@ -113,16 +113,19 @@ namespace Zebble
 
         internal void OnLoaded()
         {
-            if (StartPosition.HasValue)
-            {
-                Seek(StartPosition.Value);
-            }
+            if (StartPosition.HasValue) Seek(StartPosition.Value);            
         }
 
         public override void Dispose()
         {
-            CurrentTimeChangedTimer.Elapsed -= OnRaiseCurrentTime;
-            CurrentTimeChangedTimer.Dispose();
+            var timer = CurrentTimeChangedTimer;
+            
+            if (timer != null)
+            {
+                timer.Elapsed -= OnRaiseCurrentTime;
+                timer.Dispose();
+            }
+            
             PathChanged?.Dispose();
             base.Dispose();
         }
