@@ -83,6 +83,7 @@ namespace Zebble
 
             IsSurfaceCreated = holder.Surface?.IsValid == true;
 
+            holder.SetType(SurfaceType.PushBuffers);
             VideoPlayer.SetDisplay(VideoSurface.Holder);
 
             if (IsSurfaceCreated)
