@@ -1,34 +1,23 @@
 namespace Zebble
 {
     using System;
-    using System.Threading.Tasks;
-    using Android.Graphics;
     using Android.Media;
     using Android.Runtime;
-    using Android.Views;
     using Android.Widget;
     using Olive;
     using Zebble.Device;
-    using static Zebble.VideoPlayer;
 
-    class AndroidVideo : RelativeLayout, ISurfaceHolderCallback, MediaPlayer.IOnPreparedListener, MediaPlayer.IOnVideoSizeChangedListener
+    class AndroidVideo : VideoView, MediaPlayer.IOnPreparedListener
     {
         VideoPlayer View;
-
-        SurfaceView VideoSurface;
-        MediaPlayer VideoPlayer;
-        Preparedhandler Prepared = new Preparedhandler();
-        Preparedhandler VideoSurfaceCreate = new Preparedhandler();
-        bool IsSurfaceCreated, IsVideoBuffered;
+        MediaPlayer Player;
 
         [Preserve]
-        public AndroidVideo(IntPtr handle, JniHandleOwnership transfer) : base(UIRuntime.CurrentActivity) { }
+        public AndroidVideo(IntPtr handle, JniHandleOwnership transfer) : base(handle, transfer) { }
 
         public AndroidVideo(VideoPlayer view) : base(UIRuntime.CurrentActivity)
         {
             View = view;
-            CreateSurfaceView();
-            CreateVideoPlayer();
 
             ScaleX = view.ScaleX;
             ScaleY = view.ScaleY;
@@ -36,192 +25,95 @@ namespace Zebble
             RotationX = -view.RotationX;
             RotationY = view.RotationY;
 
-            view.Buffered.HandleOn(Thread.UI, () => SafeInvoke(() => { VideoPlayer.PrepareAsync(); IsVideoBuffered = true; }));
-            view.PathChanged.HandleOn(Thread.UI, () => SafeInvoke(() => { if (view.AutoPlay) LoadVideo(); }));
-            view.Started.HandleOn(Thread.UI, () => SafeInvoke(OnVideoStart));
-            view.Paused.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Pause)));
-            view.Resumed.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Play)));
-            view.Stopped.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.Stop)));
-            view.SoughtBeginning.HandleOn(Thread.UI, () => SafeInvoke(() => Prepared.Raise(VideoState.SeekToBegining)));
+            view.Buffered.HandleOn(Thread.UI, () => SafeInvoke(() => { Player?.PrepareAsync(); }));
+            view.PathChanged.HandleOn(Thread.UI, () => SafeInvoke(() => SetPath()));
+            view.Started.HandleOn(Thread.UI, () => SafeInvoke(Play));
+            view.Paused.HandleOn(Thread.UI, () => SafeInvoke(Pause));
+            view.Resumed.HandleOn(Thread.UI, () => SafeInvoke(Resume));
+            view.Stopped.HandleOn(Thread.UI, () => SafeInvoke(Stop));
+            view.SoughtBeginning.HandleOn(Thread.UI, () => SafeInvoke(() => SeekTo(0)));
             view.Muted.HandleOn(Thread.UI, Mute);
-            view.Seeked.HandleOn(Thread.UI, (position) => VideoPlayer.SeekTo((int)position.TotalMilliseconds));
-            view.GetCurrentTime = () => VideoPlayer.CurrentPosition.Milliseconds();
+            view.Seeked.HandleOn(Thread.UI, (position) => SeekTo((int)position.TotalMilliseconds));
+            view.GetCurrentTime = () => CurrentPosition.Milliseconds();
             view.InitializeTimer();
-            Prepared.Handle(HandleStateCommand);
-            VideoPlayer.Info += VideoPlayer_Info;
+
+            SetOnPreparedListener(this);
+            SetPath();
         }
 
-        void CreateSurfaceView()
-        {
-            VideoSurface = new SurfaceView(UIRuntime.CurrentActivity);
-            VideoSurface.Holder.AddCallback(this);
-            VideoSurface.LayoutParameters = CreateLayout();
-            AddView(VideoSurface);
-        }
-
-        void CreateVideoPlayer()
-        {
-            VideoPlayer = new MediaPlayer();
-            VideoPlayer.SetOnPreparedListener(this);
-            VideoPlayer.SetOnVideoSizeChangedListener(this);
-            VideoPlayer.Completion += OnCompletion;
-            VideoPlayer.VideoSizeChanged += OnVideoSizeChanged;
-        }
-
-        LayoutParams CreateLayout()
-        {
-            var result = new LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.MatchParent);
-            result.AddRule(LayoutRules.CenterInParent);
-            return result;
-        }
-
-        void ISurfaceHolderCallback.SurfaceChanged(ISurfaceHolder holder, [GeneratedEnum] Format format, int width, int height) { }
-
-        void ISurfaceHolderCallback.SurfaceCreated(ISurfaceHolder holder)
+        void Play()
         {
             if (IsDead(out var view)) return;
-
-            IsSurfaceCreated = holder.Surface?.IsValid == true;
-
-            holder.SetType(SurfaceType.PushBuffers);
-            VideoPlayer.SetDisplay(VideoSurface.Holder);
-
-            if (IsSurfaceCreated)
-            {
-                VideoSurfaceCreate.Handle(_ => LoadVideo());
-                if (view.AutoPlay) LoadVideo();
-            }
+            SetPath();
+            if (!view.AutoPlay) Start();
         }
 
-        void ISurfaceHolderCallback.SurfaceDestroyed(ISurfaceHolder holder)
+        void Stop()
         {
             if (IsDead(out var view)) return;
-
-            view.IsReady = false;
-            IsSurfaceCreated = false;
-            holder?.Surface?.Release();
-        }
-
-        void HandleStateCommand(VideoState result)
-        {
-            switch (result)
-            {
-                case VideoState.Play:
-                    LoadVideo();
-                    break;
-                case VideoState.Pause:
-                    if (VideoPlayer?.IsPlaying == true) VideoPlayer.Pause();
-                    break;
-                case VideoState.Stop:
-                    VideoPlayer?.Stop();
-                    VideoPlayer?.Reset();
-                    break;
-                case VideoState.SeekToBegining:
-                    VideoPlayer?.Reset();
-                    break;
-                default: break;
-            }
+            StopPlayback();
+            SeekTo(0);
         }
 
         void MediaPlayer.IOnPreparedListener.OnPrepared(MediaPlayer mp)
         {
             if (IsDead(out var view)) return;
+            Player = mp;
 
-            try { mp.SetVideoScalingMode(VideoScalingMode.ScaleToFit); }
+            try
+            {
+                if (view.BackgroundImageStretch == Stretch.Fit) mp.SetVideoScalingMode(VideoScalingMode.ScaleToFit);
+                else mp.SetVideoScalingMode(VideoScalingMode.ScaleToFitWithCropping);
+            }
             catch (Exception ex) { Log.For(this).Error(ex); }
 
             mp.Looping = view.Loop;
             view.IsReady = true;
+            view.LoadCompleted.Raise();
+            view.OnLoaded();
             view.Duration = mp.Duration.Milliseconds();
 
             if (view.IsMuted) mp.SetVolume(0, 0);
             else mp.SetVolume(1, 1);
 
-            UpdateLayoutSize();
+            mp.VideoSizeChanged += OnVideoSizeChanged;
+            mp.Completion += OnCompletion;
 
-            if (view.AutoBuffer) mp.Start();
+            if (view.AutoPlay) mp.Start();
         }
 
-        void MediaPlayer.IOnVideoSizeChangedListener.OnVideoSizeChanged(MediaPlayer mp, int width, int height)
-            => UpdateLayoutSize();
-
-        void UpdateLayoutSize()
+        void OnVideoSizeChanged(object sender, EventArgs args)
         {
             if (IsDead(out var view)) return;
-            
-            var contentSize = new Size(VideoPlayer.VideoWidth, VideoPlayer.VideoHeight);
-            var frame = new Size(Scale.ToDevice(view.ActualWidth + 2), Scale.ToDevice(view.ActualHeight + 2));
+            if (Player is null) return;
 
-            if (view.BackgroundImageStretch == Stretch.Fill)
-                contentSize = frame;
-
-            if (view.BackgroundImageStretch == Stretch.AspectFill)
+            if (Player.VideoWidth > 0)
             {
-                double wRatio = frame.Width / contentSize.Width;
-                double hRatio = frame.Height / contentSize.Height;
-                double multiplier = Math.Max(wRatio, hRatio);
-                int w = (int)(contentSize.Width * multiplier);
-                int h = (int)(contentSize.Height * multiplier);
-                contentSize = new Size(w, h);
+                view.VideoSize = new Size(Player.VideoWidth, Player.VideoHeight);
+                view.LoadCompleted?.RaiseOn(Thread.Pool);
             }
-            else
-                contentSize = contentSize.Scale(10).LimitTo(frame);
-
-            var newParams = VideoSurface.LayoutParameters;
-            newParams.Width = (int)contentSize.Width;
-            newParams.Height = (int)contentSize.Height;
-            VideoSurface.LayoutParameters = newParams;
-            SetGravity(GravityFlags.Center | GravityFlags.ClipHorizontal | GravityFlags.ClipVertical);
         }
 
-        void OnVideoStart()
-        {
-            if (IsDead(out _)) return;
-
-            if (IsVideoBuffered) VideoPlayer.Start();
-            else Prepared.Raise(VideoState.Play).GetAwaiter();
-        }
-
-        async Task LoadVideo()
+        void SetPath()
         {
             if (IsDead(out var view)) return;
 
             var source = view.Path;
             if (source.IsEmpty()) return;
-
-            if (view.IsYoutube(source))
-                source = await view.LoadYoutube(source);
-
             view.LoadedPath = source;
-
-            if (!IsSurfaceCreated)
-            {
-                await VideoSurfaceCreate.Raise(VideoState.Play);
-                return;
-            }
 
             if (IO.IsAbsolute(source)) source = "file://" + source;
             else if (!source.IsUrl()) source = "file://" + IO.AbsolutePath(source);
 
             try
             {
-                VideoPlayer.Reset();
-                VideoPlayer.SetDataSource(Renderer.Context, Android.Net.Uri.Parse(source));
-
-                if (source.IsUrl() || view.AutoBuffer)
-                    VideoPlayer.PrepareAsync();
+                SetVideoURI(Android.Net.Uri.Parse(source));
+                if (source.IsUrl() || view.AutoBuffer) Player?.PrepareAsync();
             }
             catch (Java.Lang.Exception ex)
             {
                 Log.For(this).Error(ex, "This error is raised without seemingly affecting anything!");
             }
-        }
-
-        void VideoPlayer_Info(object sender, MediaPlayer.InfoEventArgs e)
-        {
-            if (IsDead(out var view)) return;
-            view.LoadCompleted.Raise();
-            view.OnLoaded();
         }
 
         void SafeInvoke(Action action)
@@ -242,34 +134,20 @@ namespace Zebble
         {
             if (IsDead(out var view)) view = currentView;
 
-            if (view.IsMuted) VideoPlayer.SetVolume(0, 0);
-            else VideoPlayer.SetVolume(1, 1);
-        }
-
-        void OnVideoSizeChanged(object sender, EventArgs args)
-        {
-            if (IsDead(out var view)) return;
-
-            if (sender is MediaPlayer media)
-            {
-                if (view.VideoSize.Width == 0)
-                {
-                    view.VideoSize = new Size(media.VideoWidth, media.VideoHeight);
-                    view.LoadCompleted?.RaiseOn(Thread.Pool);
-                }
-            }
+            if (view.IsMuted) Player.SetVolume(0, 0);
+            else Player.SetVolume(1, 1);
         }
 
         protected override void Dispose(bool disposing)
         {
-            var vp = VideoPlayer;
+            var vp = Player;
             if (disposing && vp != null)
             {
                 vp.Completion -= OnCompletion;
                 vp.VideoSizeChanged -= OnVideoSizeChanged;
                 vp.Release();
                 vp.Dispose();
-                VideoPlayer = null;
+                Player = null;
                 View = null;
             }
 
