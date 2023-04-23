@@ -4,8 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Timers;
 using Olive;
-using Xamarin.Essentials;
-using YoutubeExplode;
 
 namespace Zebble
 {
@@ -94,87 +92,35 @@ namespace Zebble
 
         void OnRaiseCurrentTime(object sender, ElapsedEventArgs e)
         {
-            MainThread.InvokeOnMainThreadAsync(() =>
-            {
-                TimeChanged.Raise(CurrentTime);
+            Zebble.Thread.UI.Post(() =>
+             {
+                 TimeChanged.Raise(CurrentTime);
 
-                if (EndPosition.HasValue && CurrentTime.HasValue && CurrentTime.Value > EndPosition.Value)
-                {
-                    if (Loop)
-                    {
-                        if (StartPosition.HasValue)
-                        {
-                            Seek(StartPosition.Value);
-                        }
-                    }
-                }
-            });
+                 if (EndPosition.HasValue && CurrentTime.HasValue && CurrentTime.Value > EndPosition.Value)
+                 {
+                     if (Loop && StartPosition.HasValue) Seek(StartPosition.Value);
+                 }
+             });
         }
 
         internal void OnLoaded()
         {
-            if (StartPosition.HasValue) Seek(StartPosition.Value);            
+            if (StartPosition.HasValue) Seek(StartPosition.Value);
         }
 
         public override void Dispose()
         {
             var timer = CurrentTimeChangedTimer;
-            
+
             if (timer != null)
             {
                 timer.Elapsed -= OnRaiseCurrentTime;
                 timer.Dispose();
             }
-            
+
             PathChanged?.Dispose();
             base.Dispose();
-        }
-
-        internal bool IsYoutube(string url)
-        {
-            var host = url.AsUri()?.Host;
-            if (host.IsEmpty()) return false;
-            return host.EndsWith("youtube.com", StringComparison.OrdinalIgnoreCase) || host.EndsWith("youtu.be", StringComparison.OrdinalIgnoreCase);
-        }
-
-        internal async Task<string> LoadYoutube(string url)
-        {
-            if (IsYoutube(url))
-            {
-                var youtube = new YoutubeClient();
-                var video = await youtube.Videos.GetAsync(url);
-                var streamManifest = await youtube.Videos.Streams.GetManifestAsync(video.Id);
-                var orderedStreams = streamManifest.GetMuxedStreams().OrderByDescending(x => x.ToString().Contains("mp4", StringComparison.OrdinalIgnoreCase));
-                var videoUrl = "";
-
-                switch (Quality)
-                {
-                    case VideoQuality.Low:
-                        {
-                            videoUrl = orderedStreams.OrderBy(x => x.VideoQuality.MaxHeight).FirstOrDefault()?.Url;
-                            break;
-                        }
-                    case VideoQuality.Medium:
-                        {
-                            videoUrl = orderedStreams.OrderBy(x => x.VideoQuality.MaxHeight).Skip(orderedStreams.Count() / 2).FirstOrDefault()?.Url;
-                            break;
-                        }
-                    case VideoQuality.High:
-                        {
-                            videoUrl = orderedStreams.OrderByDescending(x => x.VideoQuality.MaxHeight).FirstOrDefault()?.Url;
-                            break;
-                        }
-                }
-
-                if (videoUrl.IsEmpty())
-                    videoUrl = orderedStreams.FirstOrDefault()?.Url;
-
-                if (videoUrl.IsEmpty()) return url;
-                return videoUrl;
-            }
-
-            return url;
-        }
+        } 
 
         internal enum VideoState { Play, Pause, Stop, SeekToBegining, Resume }
         internal class Preparedhandler

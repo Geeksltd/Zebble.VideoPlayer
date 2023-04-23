@@ -42,7 +42,7 @@ namespace Zebble
             view.GetCurrentTime = () => TimeSpan.FromSeconds(Player?.CurrentTime.Seconds ?? 0);
             view.InitializeTimer();
 
-            LoadVideo().RunInParallel();
+            LoadVideo();
         }
 
         void OnFrameChanged()
@@ -84,19 +84,18 @@ namespace Zebble
             if (!IsDead(out _)) Player?.Pause();
         }
 
-        async Task LoadVideo()
+        void LoadVideo()
         {
             if (IsDead(out var view)) return;
 
             if (view.Path.IsEmpty()) return;
             view.LoadedPath = view.Path;
 
-            if (view.IsYoutube(view.Path)) view.LoadedPath = await view.LoadYoutube(view.Path);
-            else if (!view.Path.IsUrl()) view.LoadedPath = "file://" + Device.IO.File(view.Path).FullName;
+            if (!view.Path.IsUrl()) view.LoadedPath = "file://" + Device.IO.File(view.Path).FullName;
 
             if (view.AutoBuffer || view.AutoPlay) BufferVideo();
 
-            await view.LoadCompleted.Raise();
+            view.LoadCompleted.Raise().RunInParallel();
             view.OnLoaded();
         }
 

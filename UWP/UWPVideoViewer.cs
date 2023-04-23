@@ -1,159 +1,81 @@
 namespace Zebble
 {
-    using Olive;
     using System;
     using System.IO;
     using System.Runtime.InteropServices.WindowsRuntime;
-    using System.Threading.Tasks;
-    using Windows.Storage;
-    using Xamarin.Essentials;
+    using Olive;
     using controls = Windows.UI.Xaml.Controls;
-    using media = Windows.UI.Xaml.Media;
 
     class UWPVideoViewer
     {
-        controls.MediaElement Result;
+        internal controls.MediaElement Result;
         VideoPlayer View;
 
         public UWPVideoViewer(VideoPlayer view)
         {
             View = view;
-            view.Buffered.HandleOn(Thread.UI, BufferVideo);
-            View.PathChanged.HandleOn(Thread.UI, LoadVideo);
-            View.Started.HandleOn(Thread.UI, () => Result.Play());
-            View.Paused.HandleOn(Thread.UI, () => Result.Pause());
-            View.Resumed.HandleOn(Thread.UI, () => Result.Play());
-            View.Stopped.HandleOn(Thread.UI, () => Result.Stop());
+            View.PathChanged.HandleOn(Thread.UI, Load);
+            View.Started.HandleOn(Thread.UI, () => Result?.Play());
+            View.Paused.HandleOn(Thread.UI, () => Result?.Pause());
+            View.Resumed.HandleOn(Thread.UI, () => Result?.Play());
+            View.Stopped.HandleOn(Thread.UI, () => Result?.Stop());
             View.Seeked.HandleOn(Thread.UI, (position) => Result.Position = position);
             View.SoughtBeginning.HandleOn(Thread.UI, () => Result.Position = 0.Milliseconds());
             view.Muted.HandleOn(Thread.UI, () => Result.IsMuted = view.IsMuted);
             View.GetCurrentTime = () => Result.Position;
             View.InitializeTimer();
 
-            Result = new controls.MediaElement { Stretch = view.BackgroundImageStretch.Render() };
-            Result.MediaEnded += (e, args) => View.FinishedPlaying.RaiseOn(Thread.UI);
-            Result.MediaOpened += MediaOpened;
+            Result = new controls.MediaElement { Stretch = view.BackgroundImageStretch.Render(), AutoPlay = View.AutoPlay, IsLooping = View.Loop };
+            Result.MediaEnded += MediaEnded;
+            Result.MediaOpened += MediaOpened;            
+
+            Load();
         }
 
-        public async Task<controls.MediaElement> Render()
-        {
-            await LoadVideo();
-            return Result;
-        }
+        void MediaEnded(object sender, Windows.UI.Xaml.RoutedEventArgs e) => View.FinishedPlaying.RaiseOn(Thread.Pool);
 
-        async Task LoadVideo()
-        {
-            try
-            {
-                await DoLoadVideo();
-            }
-            catch (Exception ex)
-            {
-                await Alert.Toast("Failed to play video: " + ex.Message);
-            }
-        }
-
-        async Task DoLoadVideo()
+        void Load()
         {
             var url = View.Path;
             if (url.IsEmpty()) return;
-            if (View.IsYoutube(url))
-            {
-                _ = Task.Run(async () =>
-                {
-                    url = await View.LoadYoutube(url);
-                    View.LoadedPath = url;
-                    await MainThread.InvokeOnMainThreadAsync(async () =>
-                    {
-                        if (View.AutoBuffer)
-                            await BufferVideo();
 
-                        Result.AutoPlay = View.AutoPlay;
-                        Result.IsLooping = View.Loop;
-                    });
-                });
+            if (url.IsUrl())
+            {
+                Result.Source = url.AsUri();
+                View.LoadedPath = url;
             }
             else
             {
-                if (url.IsUrl())
+                try
                 {
-                    View.LoadedPath = url;
-                    if (View.AutoBuffer) await BufferVideo();
+                    var file = Device.IO.File(url);
+                    var data = file.ReadAllBytes();
+                    var source = data.AsBuffer().AsStream().AsRandomAccessStream();
+                    Result.SetSource(source, string.Empty);
                 }
-                else
+                catch (Exception ex)
                 {
-                    try
-                    {
-                        var file = Device.IO.File(url);
-                        var data = await file.ReadAllBytesAsync();
-                        var source = data.AsBuffer().AsStream().AsRandomAccessStream();
-                        Result.SetSource(source, string.Empty);
-
-                        View.VideoSize = await GetVideoSize(file: file);
-                    }
-                    catch (Exception ex)
-                    {
-                        await Alert.Toast("Failed to show video: " + ex.Message);
-                    }
-                    View.LoadedPath = url;
+                    Alert.Toast("Failed to show video: " + ex.Message).RunInParallel();
                 }
-
-                Result.AutoPlay = View.AutoPlay;
-                Result.IsLooping = View.Loop;
+                View.LoadedPath = url;
             }
         }
 
-        private void MediaOpened(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        void MediaOpened(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
+            View.IsReady = true;
+            View.Duration = Result.NaturalDuration.TimeSpan;
+            View.VideoSize = new Size(Result.NaturalVideoWidth, Result.NaturalVideoHeight);
             View.LoadCompleted.Raise();
             View.OnLoaded();
         }
 
-        void Result_BufferingProgressChanged(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        internal void Dispose()
         {
-            View.IsReady = true;
-            View.Duration = Result.NaturalDuration.TimeSpan;
-        }
-
-        async Task BufferVideo()
-        {
-            var url = View.LoadedPath;
-            if (url.IsEmpty()) return;
-
-            Result.Source = url.AsUri();
-            Result.BufferingProgressChanged += Result_BufferingProgressChanged;
-            
-            Zebble.Thread.Pool.RunOnNewThread(async () =>
-            {
-                View.VideoSize = await GetVideoSize(source: url.AsUri());
-            });
-        }
-
-        async Task<Size> GetVideoSize(Uri source = null, FileInfo file = null)
-        {
-            StorageFile currentFile;
-
-            if (source != null)
-            {
-                var fileBytes = await Device.Network.Download(source);
-                var tempFile = Device.IO.CreateTempFile(".mp4");
-                await tempFile.WriteAllBytesAsync(fileBytes);
-                currentFile = await tempFile.ToStorageFile();
-            }
-            else
-            {
-                currentFile = await file.ToStorageFile();
-            }
-
-            const string HEIGHT = "System.Video.FrameHeight";
-            const string WIDTH = "System.Video.FrameWidth";
-
-            var properties = await currentFile.Properties.RetrievePropertiesAsync(new[] { HEIGHT, WIDTH });
-            if (properties is null) return new Size(0, 0);
-
-            int val(string key) => properties?[key].ToStringOrEmpty().TryParseAs<int>() ?? 0;
-
-            return new Size(val(WIDTH), val(HEIGHT));
+            if (Result is null) return;
+            Result.MediaEnded -= MediaEnded;
+            Result.MediaOpened -= MediaOpened;
+            Result = null;
         }
     }
 }
