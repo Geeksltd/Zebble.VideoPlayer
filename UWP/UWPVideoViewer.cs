@@ -122,7 +122,11 @@ namespace Zebble
 
             Result.Source = url.AsUri();
             Result.BufferingProgressChanged += Result_BufferingProgressChanged;
-            View.VideoSize = await GetVideoSize(source: url.AsUri());
+            
+            Zebble.Thread.Pool.RunOnNewThread(async () =>
+            {
+                View.VideoSize = await GetVideoSize(source: url.AsUri());
+            });
         }
 
         async Task<Size> GetVideoSize(Uri source = null, FileInfo file = null)
