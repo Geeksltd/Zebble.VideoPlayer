@@ -148,6 +148,7 @@ namespace Zebble
                 vp.Release();
                 vp.Dispose();
                 Player = null;
+                View.GetCurrentTime = null;
                 View = null;
             }
 

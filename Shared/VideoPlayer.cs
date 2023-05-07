@@ -78,7 +78,15 @@ namespace Zebble
 
         public TimeSpan? Duration { get; internal set; }
 
-        public TimeSpan? CurrentTime => GetCurrentTime?.Invoke() ?? TimeSpan.Zero;
+        public TimeSpan? CurrentTime
+        {
+            get
+            {
+                if (IsDisposed) return TimeSpan.Zero;
+                if (GetCurrentTime is null) return TimeSpan.Zero;
+                return GetCurrentTime();
+            }
+        }
 
         System.Timers.Timer CurrentTimeChangedTimer;
         internal void InitializeTimer()
