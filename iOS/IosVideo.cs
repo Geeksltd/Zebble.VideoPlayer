@@ -219,7 +219,8 @@ namespace Zebble
                 CoreDispose();
 
                 Prepared = null;
-                View.GetCurrentTime = null;
+                var view = View;
+                if (view is not null) view.GetCurrentTime = null;
                 View = null;
             }
 
