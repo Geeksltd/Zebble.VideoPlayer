@@ -55,12 +55,21 @@ namespace Zebble
 
         void Mute()
         {
-            if (!IsDead(out var view)) Player.Muted = view.IsMuted;
+            if (IsDead(out var view)) return;
+
+            Player.Muted = view.IsMuted;
+            if (view.IsMuted)
+                Zebble.Device.Audio.ReleaseSession();
+            else
+                Zebble.Device.Audio.AcquireSession(AVAudioSessionCategory.Playback);
         }
 
         void Resume()
         {
-            if (!IsDead(out _)) Player?.Play();
+            if (IsDead(out _)) return;
+
+            Player?.Play();
+            Zebble.Device.Audio.AcquireSession(AVAudioSessionCategory.Playback);
         }
 
         void SeekBeginning()
@@ -76,12 +85,19 @@ namespace Zebble
 
         void Pause()
         {
-            if (!IsDead(out _)) Player?.Pause();
+            if (IsDead(out _)) return;
+
+            Player?.Pause();
+            Zebble.Device.Audio.ReleaseSession();
         }
 
         void Stop()
         {
-            if (!IsDead(out _)) Player?.Pause();
+            if (IsDead(out _)) return;
+
+            Player?.Pause();
+            SeekBeginning();
+            Zebble.Device.Audio.ReleaseSession();
         }
 
         void LoadVideo()
@@ -104,7 +120,11 @@ namespace Zebble
             if (IsDead(out var view)) return;
 
             if (view.Loop) Play();
-            else view.FinishedPlaying.RaiseOn(Thread.UI);
+            else
+            {
+                view.FinishedPlaying.RaiseOn(Thread.UI);
+                Zebble.Device.Audio.ReleaseSession();
+            }
         }
 
         void ItemStatusChanged()
@@ -132,6 +152,8 @@ namespace Zebble
             PlayerLayer.VideoGravity = GetStretch();
             PlayerLayer.Frame = Bounds;
             Layer.AddSublayer(PlayerLayer);
+
+            Mute();
         }
 
         AVLayerVideoGravity GetStretch()
@@ -181,7 +203,7 @@ namespace Zebble
         {
             if (IsDead(out var view)) return;
 
-            if (view.AutoPlay) Player.Play();
+            if (view.AutoPlay) Play();
 
             view.Duration = ((int)PlayerItem.Duration.Seconds).Seconds();
 
