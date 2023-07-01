@@ -24,16 +24,18 @@ namespace Zebble
             Rotation = view.Rotation;
             RotationX = -view.RotationX;
             RotationY = view.RotationY;
+            
+            SetAudioFocusRequest(AudioFocus.None);
 
             view.Buffered.HandleOn(Thread.UI, () => SafeInvoke(() => { Player?.PrepareAsync(); }));
             view.PathChanged.HandleOn(Thread.UI, () => SafeInvoke(() => SetPath()));
-            view.Started.HandleOn(Thread.UI, () => SafeInvoke(Play));
-            view.Paused.HandleOn(Thread.UI, () => SafeInvoke(Pause));
-            view.Resumed.HandleOn(Thread.UI, () => SafeInvoke(Resume));
-            view.Stopped.HandleOn(Thread.UI, () => SafeInvoke(Stop));
-            view.SoughtBeginning.HandleOn(Thread.UI, () => SafeInvoke(() => SeekTo(0)));
+            view.Started.HandleOn(Thread.UI, Play);
+            view.Paused.HandleOn(Thread.UI, OnPause);
+            view.Resumed.HandleOn(Thread.UI, OnResume);
+            view.Stopped.HandleOn(Thread.UI, Stop);
+            view.SoughtBeginning.HandleOn(Thread.UI, OnSeekBeginning);
             view.Muted.HandleOn(Thread.UI, Mute);
-            view.Seeked.HandleOn(Thread.UI, (position) => SeekTo((int)position.TotalMilliseconds));
+            view.Seeked.HandleOn(Thread.UI, (position) => SafeInvoke(() => SeekTo((int)position.TotalMilliseconds)));
             view.GetCurrentTime = () => CurrentPosition.Milliseconds();
             view.InitializeTimer();
 
@@ -44,15 +46,30 @@ namespace Zebble
         void Play()
         {
             if (IsDead(out var view)) return;
-            SetPath();
-            if (!view.AutoPlay) Start();
+
+            try
+            {
+                SetPath();
+
+                if (view.AutoPlay) return;
+
+                Audio.RequestFocus(AudioFocus.GainTransientMayDuck);
+                Start();
+            }
+            catch (Exception ex) { Log.For(this).Error(ex); }
         }
 
         void Stop()
         {
-            if (IsDead(out var view)) return;
-            StopPlayback();
-            SeekTo(0);
+            if (IsDead(out var _)) return;
+
+            try
+            {
+                StopPlayback();
+                OnSeekBeginning();
+                Audio.AbandonFocus();
+            }
+            catch (Exception ex) { Log.For(this).Error(ex); }
         }
 
         void MediaPlayer.IOnPreparedListener.OnPrepared(MediaPlayer mp)
@@ -73,13 +90,17 @@ namespace Zebble
             view.OnLoaded();
             view.Duration = mp.Duration.Milliseconds();
 
-            if (view.IsMuted) mp.SetVolume(0, 0);
-            else mp.SetVolume(1, 1);
+            Mute(view);
 
             mp.VideoSizeChanged += OnVideoSizeChanged;
             mp.Completion += OnCompletion;
+            mp.Error += OnErrorOccurred;
 
-            if (view.AutoPlay) mp.Start();
+            if (view.AutoPlay)
+            {
+                Audio.RequestFocus(AudioFocus.GainTransientMayDuck);
+                mp.Start();
+            }
         }
 
         void OnVideoSizeChanged(object sender, EventArgs args)
@@ -107,6 +128,9 @@ namespace Zebble
 
             try
             {
+                if (view.IsMuted) Audio.AbandonFocus();
+                else Audio.RequestFocus(AudioFocus.GainTransientMayDuck);
+
                 SetVideoURI(Android.Net.Uri.Parse(source));
                 if (source.IsUrl() || view.AutoBuffer) Player?.PrepareAsync();
             }
@@ -114,6 +138,38 @@ namespace Zebble
             {
                 Log.For(this).Error(ex, "This error is raised without seemingly affecting anything!");
             }
+        }
+
+        void OnResume()
+        {
+            if (IsDead(out _)) return;
+
+            try
+            {
+                Audio.RequestFocus(AudioFocus.GainTransientMayDuck);
+                Resume();
+            }
+            catch (Exception ex) { Log.For(this).Error(ex); }
+        }
+
+        void OnPause()
+        {
+            if (IsDead(out _)) return;
+
+            try
+            {
+                Pause();
+                Audio.AbandonFocus();
+            }
+            catch (Exception ex) { Log.For(this).Error(ex); }
+        }
+
+        void OnSeekBeginning()
+        {
+            if (IsDead(out _)) return;
+
+            try { SeekTo(0); }
+            catch (Exception ex) { Log.For(this).Error(ex); }
         }
 
         void SafeInvoke(Action action)
@@ -128,14 +184,29 @@ namespace Zebble
         {
             if (IsDead(out var view)) return;
             await view.FinishedPlaying.RaiseOn(Thread.Pool);
+            Audio.AbandonFocus();
+        }
+
+        void OnErrorOccurred(object sender, MediaPlayer.ErrorEventArgs e)
+        {
+            if (IsDead(out var view)) return;
+            Audio.AbandonFocus();
         }
 
         void Mute(VideoPlayer currentView)
         {
             if (IsDead(out var view)) view = currentView;
 
-            if (view.IsMuted) Player.SetVolume(0, 0);
-            else Player.SetVolume(1, 1);
+            if (view.IsMuted)
+            {
+                Audio.AbandonFocus();
+                Player.SetVolume(0, 0);
+            }
+            else
+            {
+                Audio.RequestFocus(AudioFocus.GainTransientMayDuck);
+                Player.SetVolume(1, 1);
+            }
         }
 
         protected override void Dispose(bool disposing)
@@ -143,7 +214,10 @@ namespace Zebble
             var vp = Player;
             if (disposing && vp != null)
             {
+                Audio.AbandonFocus();
+
                 vp.Completion -= OnCompletion;
+                vp.Error -= OnErrorOccurred;
                 vp.VideoSizeChanged -= OnVideoSizeChanged;
                 vp.Release();
                 vp.Dispose();
