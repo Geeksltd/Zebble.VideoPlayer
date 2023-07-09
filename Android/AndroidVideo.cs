@@ -216,15 +216,16 @@ namespace Zebble
             {
                 Audio.AbandonFocus();
 
+                var view = View;
+                if (view is not null) view.GetCurrentTime = null;
+                View = null;
+
                 vp.Completion -= OnCompletion;
                 vp.Error -= OnErrorOccurred;
                 vp.VideoSizeChanged -= OnVideoSizeChanged;
                 vp.Release();
                 vp.Dispose();
                 Player = null;
-                var view = View;
-                if (view is not null) view.GetCurrentTime = null;
-                View = null;
             }
 
             base.Dispose(disposing);
