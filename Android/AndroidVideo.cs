@@ -11,6 +11,7 @@ namespace Zebble
     {
         VideoPlayer View;
         MediaPlayer Player;
+        int LastPosition;
 
         [Preserve]
         public AndroidVideo(IntPtr handle, JniHandleOwnership transfer) : base(handle, transfer) { }
@@ -24,7 +25,7 @@ namespace Zebble
             Rotation = view.Rotation;
             RotationX = -view.RotationX;
             RotationY = view.RotationY;
-            
+
             SetAudioFocusRequest(AudioFocus.None);
 
             view.Buffered.HandleOn(Thread.UI, () => SafeInvoke(() => { Player?.PrepareAsync(); }));
@@ -49,6 +50,8 @@ namespace Zebble
 
             try
             {
+                LastPosition = default;
+
                 SetPath();
 
                 if (view.AutoPlay) return;
@@ -65,6 +68,7 @@ namespace Zebble
 
             try
             {
+                LastPosition = default;
                 StopPlayback();
                 OnSeekBeginning();
                 Audio.AbandonFocus();
@@ -147,9 +151,13 @@ namespace Zebble
             try
             {
                 Audio.RequestFocus(AudioFocus.GainTransientMayDuck);
-                Resume();
+                SeekTo(LastPosition);
+                Start();
             }
-            catch (Exception ex) { Log.For(this).Error(ex); }
+            catch (Exception ex)
+            {
+                Log.For(this).Error(ex);
+            }
         }
 
         void OnPause()
@@ -159,6 +167,7 @@ namespace Zebble
             try
             {
                 Pause();
+                LastPosition = CurrentPosition;
                 Audio.AbandonFocus();
             }
             catch (Exception ex) { Log.For(this).Error(ex); }
@@ -168,7 +177,7 @@ namespace Zebble
         {
             if (IsDead(out _)) return;
 
-            try { SeekTo(0); }
+            try { SeekTo(0); LastPosition = default; }
             catch (Exception ex) { Log.For(this).Error(ex); }
         }
 
