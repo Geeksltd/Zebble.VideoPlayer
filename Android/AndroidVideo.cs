@@ -94,7 +94,7 @@ namespace Zebble
             view.OnLoaded();
             view.Duration = mp.Duration.Milliseconds();
 
-            Mute(view);
+            Mute();
 
             mp.VideoSizeChanged += OnVideoSizeChanged;
             mp.Completion += OnCompletion;
@@ -202,9 +202,9 @@ namespace Zebble
             Audio.AbandonFocus();
         }
 
-        void Mute(VideoPlayer currentView)
+        void Mute()
         {
-            if (IsDead(out var view)) view = currentView;
+            if (IsDead(out var view)) return;
 
             if (view.IsMuted)
             {
