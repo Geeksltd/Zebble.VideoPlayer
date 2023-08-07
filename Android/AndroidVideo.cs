@@ -209,12 +209,16 @@ namespace Zebble
             if (view.IsMuted)
             {
                 Audio.AbandonFocus();
-                Player.SetVolume(0, 0);
+
+                try { Player.SetVolume(0, 0); }
+                catch { }
             }
             else
             {
                 Audio.RequestFocus(AudioFocus.GainTransientMayDuck);
-                Player.SetVolume(1, 1);
+
+                try { Player.SetVolume(1, 1); }
+                catch { }
             }
         }
 
