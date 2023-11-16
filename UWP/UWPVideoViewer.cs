@@ -55,7 +55,7 @@ namespace Zebble
                 }
                 catch (Exception ex)
                 {
-                    Alert.Toast("Failed to show video: " + ex.Message).RunInParallel();
+                    Dialogs.Current.Toast("Failed to show video: " + ex.Message);
                 }
                 View.LoadedPath = url;
             }
