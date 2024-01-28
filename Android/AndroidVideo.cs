@@ -110,7 +110,7 @@ namespace Zebble
 
         bool MediaPlayer.IOnErrorListener.OnError(MediaPlayer mp, [GeneratedEnum] MediaError what, int extra)
         {
-            Dialogs.Current.Alert("Pssst!", "We failed to play the video. Error: " + what + ", Extra: " + extra);
+            Log.For(this).Error("Failed to play a video. Error: " + what + ", Extra: " + extra);
             return true;
         }
 
