@@ -7,7 +7,7 @@ namespace Zebble
     using Olive;
     using Zebble.Device;
 
-    class AndroidVideo : VideoView, MediaPlayer.IOnPreparedListener
+    class AndroidVideo : VideoView, MediaPlayer.IOnPreparedListener, MediaPlayer.IOnErrorListener
     {
         VideoPlayer View;
         MediaPlayer Player;
@@ -41,6 +41,7 @@ namespace Zebble
             view.InitializeTimer();
 
             SetOnPreparedListener(this);
+            SetOnErrorListener(this);
             SetPath();
         }
 
@@ -105,6 +106,12 @@ namespace Zebble
                 Audio.RequestFocus(AudioFocus.GainTransientMayDuck);
                 mp.Start();
             }
+        }
+
+        bool MediaPlayer.IOnErrorListener.OnError(MediaPlayer mp, [GeneratedEnum] MediaError what, int extra)
+        {
+            Dialogs.Current.Alert("Pssst!", "We failed to play the video. Error: " + what + ", Extra: " + extra);
+            return true;
         }
 
         void OnVideoSizeChanged(object sender, EventArgs args)
