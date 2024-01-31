@@ -61,7 +61,7 @@ namespace Zebble
             if (view.IsMuted)
                 Zebble.Device.Audio.ReleaseSession();
             else
-                Zebble.Device.Audio.AcquireSession(AVAudioSessionCategory.Playback);
+                Zebble.Device.Audio.AcquireSession();
         }
 
         void Resume()
@@ -69,7 +69,7 @@ namespace Zebble
             if (IsDead(out _)) return;
 
             Player?.Play();
-            Zebble.Device.Audio.AcquireSession(AVAudioSessionCategory.Playback);
+            Zebble.Device.Audio.AcquireSession();
         }
 
         void SeekBeginning()

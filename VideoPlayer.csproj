@@ -6,7 +6,7 @@
     <RootNamespace>Zebble</RootNamespace>
     <PackageId>Zebble.VideoPlayer</PackageId>
     <Product>$(AssemblyName) ($(TargetFramework))</Product>
-    <Version>4.2.456.0</Version>
+    <Version>4.2.457.0</Version>
     <PackOnBuild>true</PackOnBuild>
     <NeutralLanguage>en</NeutralLanguage>
     <DefineConstants>$(DefineConstants)</DefineConstants>
@@ -67,8 +67,8 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Text.Encoding.CodePages" Version="7.0.0" />
-    <PackageReference Include="Zebble" Version="4.5.733.0" />
-    <PackageReference Include="Zebble.Audio" Version="2.1.152" />
+    <PackageReference Include="Zebble" Version="4.6.135" />
+    <PackageReference Include="Zebble.Audio" Version="2.1.154" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Android\" />
