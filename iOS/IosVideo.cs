@@ -58,9 +58,7 @@ namespace Zebble
             if (IsDead(out var view)) return;
 
             Player.Muted = view.IsMuted;
-            if (view.IsMuted)
-                Zebble.Device.Audio.ReleaseSession();
-            else
+            if (view.IsMuted == false)
                 Zebble.Device.Audio.AcquireSession();
         }
 
@@ -88,7 +86,6 @@ namespace Zebble
             if (IsDead(out _)) return;
 
             Player?.Pause();
-            Zebble.Device.Audio.ReleaseSession();
         }
 
         void Stop()
@@ -97,7 +94,6 @@ namespace Zebble
 
             Player?.Pause();
             SeekBeginning();
-            Zebble.Device.Audio.ReleaseSession();
         }
 
         void LoadVideo()
@@ -120,11 +116,7 @@ namespace Zebble
             if (IsDead(out var view)) return;
 
             if (view.Loop) Play();
-            else
-            {
-                view.FinishedPlaying.RaiseOn(Thread.UI);
-                Zebble.Device.Audio.ReleaseSession();
-            }
+            else view.FinishedPlaying.RaiseOn(Thread.UI);
         }
 
         void ItemStatusChanged()
