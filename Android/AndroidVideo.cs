@@ -93,7 +93,9 @@ namespace Zebble
             view.IsReady = true;
             view.LoadCompleted.Raise();
             view.OnLoaded();
-            view.Duration = mp.Duration.Milliseconds();
+
+            try { view.Duration = mp.Duration.Milliseconds(); }
+            catch { }
 
             Mute();
 
