@@ -80,6 +80,15 @@ namespace Zebble
         void MediaPlayer.IOnPreparedListener.OnPrepared(MediaPlayer mp)
         {
             if (IsDead(out var view)) return;
+
+            var player = Player;
+            if (player is not null)
+            {
+                player.VideoSizeChanged -= OnVideoSizeChanged;
+                player.Completion -= OnCompletion;
+                player.Error -= OnErrorOccurred;
+            }
+
             Player = mp;
 
             try
@@ -106,7 +115,8 @@ namespace Zebble
             if (view.AutoPlay)
             {
                 Audio.RequestFocus(AudioFocus.GainTransientMayDuck);
-                mp.Start();
+                try { mp.Start(); }
+                catch { }
             }
         }
 
