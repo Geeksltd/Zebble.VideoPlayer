@@ -129,13 +129,18 @@ namespace Zebble
         void OnVideoSizeChanged(object sender, EventArgs args)
         {
             if (IsDead(out var view)) return;
-            if (Player is null) return;
 
-            if (Player.VideoWidth > 0)
+            var player = Player;
+            if (player is null) return;
+
+            try
             {
-                view.VideoSize = new Size(Player.VideoWidth, Player.VideoHeight);
-                view.LoadCompleted?.RaiseOn(Thread.Pool);
+                if (player.VideoWidth == 0) return;
+                view.VideoSize = new Size(player.VideoWidth, player.VideoHeight);
             }
+            catch { }
+
+            view.LoadCompleted.RaiseOn(Thread.Pool);
         }
 
         void SetPath()
