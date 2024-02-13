@@ -79,45 +79,49 @@ namespace Zebble
 
         void MediaPlayer.IOnPreparedListener.OnPrepared(MediaPlayer mp)
         {
-            if (IsDead(out var view)) return;
-
-            var player = Player;
-            if (player is not null)
-            {
-                player.VideoSizeChanged -= OnVideoSizeChanged;
-                player.Completion -= OnCompletion;
-                player.Error -= OnErrorOccurred;
-            }
-
-            Player = mp;
-
             try
             {
-                if (view.BackgroundImageStretch == Stretch.Fit) mp.SetVideoScalingMode(VideoScalingMode.ScaleToFit);
-                else mp.SetVideoScalingMode(VideoScalingMode.ScaleToFitWithCropping);
+                if (IsDead(out var view)) return;
+
+                var player = Player;
+                if (player is not null)
+                {
+                    player.VideoSizeChanged -= OnVideoSizeChanged;
+                    player.Completion -= OnCompletion;
+                    player.Error -= OnErrorOccurred;
+                }
+
+                Player = mp;
+
+                try
+                {
+                    if (view.BackgroundImageStretch == Stretch.Fit) mp.SetVideoScalingMode(VideoScalingMode.ScaleToFit);
+                    else mp.SetVideoScalingMode(VideoScalingMode.ScaleToFitWithCropping);
+                }
+                catch (Exception ex) { Log.For(this).Error(ex); }
+
+                mp.Looping = view.Loop;
+                view.IsReady = true;
+                view.LoadCompleted.Raise();
+                view.OnLoaded();
+
+                try { view.Duration = mp.Duration.Milliseconds(); }
+                catch { }
+
+                Mute();
+
+                mp.VideoSizeChanged += OnVideoSizeChanged;
+                mp.Completion += OnCompletion;
+                mp.Error += OnErrorOccurred;
+
+                if (view.AutoPlay)
+                {
+                    Audio.RequestFocus(AudioFocus.GainTransientMayDuck);
+                    try { mp.Start(); }
+                    catch { }
+                }
             }
             catch (Exception ex) { Log.For(this).Error(ex); }
-
-            mp.Looping = view.Loop;
-            view.IsReady = true;
-            view.LoadCompleted.Raise();
-            view.OnLoaded();
-
-            try { view.Duration = mp.Duration.Milliseconds(); }
-            catch { }
-
-            Mute();
-
-            mp.VideoSizeChanged += OnVideoSizeChanged;
-            mp.Completion += OnCompletion;
-            mp.Error += OnErrorOccurred;
-
-            if (view.AutoPlay)
-            {
-                Audio.RequestFocus(AudioFocus.GainTransientMayDuck);
-                try { mp.Start(); }
-                catch { }
-            }
         }
 
         bool MediaPlayer.IOnErrorListener.OnError(MediaPlayer mp, [GeneratedEnum] MediaError what, int extra)
