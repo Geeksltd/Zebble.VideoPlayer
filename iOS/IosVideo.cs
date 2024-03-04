@@ -173,7 +173,7 @@ namespace Zebble
 
                 UIGraphics.BeginImageContext(new CoreGraphics.CGSize(1, 1));
 
-                var track = Asset?.TracksWithMediaType(AVMediaType.Video)?.FirstOrDefault();
+                var track = Asset?.GetTracks(AVMediaTypes.Video)?.FirstOrDefault();
 
                 if (track != null)
                 {
