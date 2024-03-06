@@ -29,7 +29,7 @@ namespace Zebble
 
             view.Width.Changed.HandleOn(Thread.UI, OnFrameChanged);
             view.Height.Changed.HandleOn(Thread.UI, OnFrameChanged);
-            view.Buffered.HandleOn(Thread.UI, BufferVideo);
+            view.BufferRequested.HandleOn(Thread.UI, BufferVideo);
             view.PathChanged.HandleOn(Thread.UI, () => { CoreDispose(); LoadVideo(); });
             view.Started.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Play));
             view.Paused.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Pause));

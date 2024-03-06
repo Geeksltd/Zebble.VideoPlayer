@@ -28,7 +28,7 @@ namespace Zebble
 
             SetAudioFocusRequest(AudioFocus.None);
 
-            view.Buffered.HandleOn(Thread.UI, () => SafeInvoke(() => { Player?.PrepareAsync(); }));
+            view.BufferRequested.HandleOn(Thread.UI, () => SafeInvoke(() => { Player?.PrepareAsync(); }));
             view.PathChanged.HandleOn(Thread.UI, () => SafeInvoke(() => SetPath()));
             view.Started.HandleOn(Thread.UI, Play);
             view.Paused.HandleOn(Thread.UI, OnPause);
@@ -252,6 +252,8 @@ namespace Zebble
 
         protected override void Dispose(bool disposing)
         {
+            SetOnPreparedListener(null);
+
             var vp = Player;
             if (disposing && vp != null)
             {

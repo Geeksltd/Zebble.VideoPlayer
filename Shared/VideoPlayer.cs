@@ -17,7 +17,7 @@ namespace Zebble
         internal readonly AsyncEvent Resumed = new AsyncEvent();
         internal readonly AsyncEvent Stopped = new AsyncEvent();
         internal readonly AsyncEvent SoughtBeginning = new AsyncEvent();
-        internal readonly AsyncEvent Buffered = new AsyncEvent();
+        internal readonly AsyncEvent BufferRequested = new AsyncEvent();
         internal readonly AsyncEvent<TimeSpan> Seeked = new AsyncEvent<TimeSpan>();
         public readonly AsyncEvent<TimeSpan?> TimeChanged = new AsyncEvent<TimeSpan?>();
         internal readonly AsyncEvent<VideoPlayer> Muted = new AsyncEvent<VideoPlayer>();
@@ -72,7 +72,7 @@ namespace Zebble
 
         public void SeekBeginning() => SoughtBeginning.Raise();
 
-        public void BufferVideo() => Buffered.Raise();
+        public void BufferVideo() => BufferRequested.Raise();
 
         public void Seek(TimeSpan timeSpan) => Seeked.Raise(timeSpan);
 
