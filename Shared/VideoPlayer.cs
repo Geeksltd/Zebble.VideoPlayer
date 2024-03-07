@@ -100,15 +100,16 @@ namespace Zebble
 
         void OnRaiseCurrentTime(object sender, ElapsedEventArgs e)
         {
-            Zebble.Thread.UI.Post(() =>
-             {
-                 TimeChanged.Raise(CurrentTime);
+            var mayNeedRestart = Loop && EndPosition.HasValue && StartPosition.HasValue;
 
-                 if (EndPosition.HasValue && CurrentTime.HasValue && CurrentTime.Value > EndPosition.Value)
-                 {
-                     if (Loop && StartPosition.HasValue) Seek(StartPosition.Value);
-                 }
-             });
+            if (mayNeedRestart || TimeChanged.IsHandled())
+                Thread.UI.Run(() =>
+                {
+                    if (mayNeedRestart && CurrentTime >= EndPosition)
+                        Seek(StartPosition.Value); 
+
+                    TimeChanged.Raise(CurrentTime);
+                });
         }
 
         internal void OnLoaded()
@@ -128,7 +129,7 @@ namespace Zebble
 
             PathChanged?.Dispose();
             base.Dispose();
-        } 
+        }
 
         internal enum VideoState { Play, Pause, Stop, SeekToBegining, Resume }
         internal class Preparedhandler
