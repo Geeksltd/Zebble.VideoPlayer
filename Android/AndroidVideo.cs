@@ -262,11 +262,9 @@ namespace Zebble
 
         protected override void Dispose(bool disposing)
         {
-            SetOnPreparedListener(null);
-
-            var vp = Player;
             if (disposing)
             {
+                var vp = Player;
                 if (vp != null)
                 {
                     Audio.AbandonFocus();
@@ -277,6 +275,10 @@ namespace Zebble
                     vp.Reset();
                     vp.Release();
                     vp.Dispose();
+
+                    SetOnPreparedListener(null);
+                    SetOnErrorListener(null);
+
                     Player = null;
                 }
 
