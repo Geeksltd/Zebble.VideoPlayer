@@ -2,6 +2,7 @@ namespace Zebble
 {
     using System;
     using Android.Media;
+    using Android.OS;
     using Android.Runtime;
     using Android.Widget;
     using Olive;
@@ -26,7 +27,8 @@ namespace Zebble
             RotationX = -view.RotationX;
             RotationY = view.RotationY;
 
-            SetAudioFocusRequest(AudioFocus.None);
+            if (OS.IsAtLeast(BuildVersionCodes.O))
+                SetAudioFocusRequest(AudioFocus.None);
 
             view.BufferRequested.HandleOn(Thread.UI, () => SafeInvoke(() => Player?.PrepareAsync()));
             view.PathChanged.HandleOn(Thread.UI, () => SafeInvoke(() => SetPath()));
