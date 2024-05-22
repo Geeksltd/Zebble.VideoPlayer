@@ -5,7 +5,6 @@ namespace Zebble
     using System.Threading.Tasks;
     using AVFoundation;
     using CoreMedia;
-    using Foundation;
     using Olive;
     using UIKit;
     using static Zebble.VideoPlayer;
@@ -43,6 +42,29 @@ namespace Zebble
             view.InitializeTimer();
 
             LoadVideo();
+        }
+
+        public override async void WillMoveToWindow(UIWindow window)
+        {
+            base.WillMoveToWindow(window);
+
+            if (View?.AutoPlay != true && View?.AutoBuffer != true) return;
+
+            var attempts = 0;
+            while (attempts++ < 10)
+            {
+                if (View?.IsCompletelyVisibleOnScreen() != true) await Task.Delay(100);
+                else
+                {
+                    if (View?.IsReady == true)
+                    {
+                        View?.LoadCompleted.Raise().RunInParallel();
+                        View?.OnLoaded();
+                        Prepared?.Raise(VideoState.Resume);
+                    }
+                    break;
+                }
+            }
         }
 
         void OnFrameChanged()
@@ -136,6 +158,8 @@ namespace Zebble
             PlayerItem = new AVPlayerItem(Asset);
 
             DidPlayToEndTimeObservation?.Dispose();
+            StatusObservation?.Dispose();
+
             DidPlayToEndTimeObservation = AVPlayerItem.Notifications.ObserveDidPlayToEndTime(PlayerItem, (_, _) => PlayedToEnd());
             StatusObservation = PlayerItem.AddObserver("status", 0, _ => ItemStatusChanged());
 
@@ -171,8 +195,6 @@ namespace Zebble
                 Asset?.Dispose();
                 Asset = AVAsset.FromUrl(nsUrl);
 
-                UIGraphics.BeginImageContext(new CoreGraphics.CGSize(1, 1));
-
                 var track = Asset?.GetTracks(AVMediaTypes.Video)?.FirstOrDefault();
 
                 if (track != null)
@@ -182,8 +204,6 @@ namespace Zebble
                 }
 
                 InitializePlayer();
-
-                UIGraphics.EndImageContext();
             }
             catch (Exception ex)
             {
