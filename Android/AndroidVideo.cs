@@ -166,7 +166,8 @@ namespace Zebble
                 else Audio.RequestFocus(AudioFocus.GainTransientMayDuck);
 
                 SetVideoURI(Android.Net.Uri.Parse(source));
-                if (source.IsUrl() || view.AutoBuffer) Player?.Start();
+
+                if (source.IsUrl() || view.AutoBuffer) Start();
             }
             catch (Java.Lang.Exception ex)
             {
