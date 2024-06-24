@@ -274,7 +274,6 @@ namespace Zebble
                     vp.Completion -= OnCompletion;
                     vp.Error -= OnErrorOccurred;
                     vp.VideoSizeChanged -= OnVideoSizeChanged;
-                    vp.Reset();
                     vp.Release();
                     vp.Dispose();
 
