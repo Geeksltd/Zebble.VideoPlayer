@@ -44,7 +44,7 @@ namespace Zebble
 
             SetOnPreparedListener(this);
             SetOnErrorListener(this);
-            SetPath();
+            Thread.UI.Run(SetPath);
         }
 
         void Play()
@@ -231,7 +231,7 @@ namespace Zebble
         async void OnCompletion(object sender, EventArgs args)
         {
             if (IsDead(out var view)) return;
-            await view.FinishedPlaying.RaiseOn(Thread.Pool);
+            await view.FinishedPlaying.RaiseOn(Thread.Pool).ConfigureAwait(false);
             Audio.AbandonFocus();
         }
 

@@ -53,7 +53,7 @@ namespace Zebble
             var attempts = 0;
             while (attempts++ < 10)
             {
-                if (View?.IsCompletelyVisibleOnScreen() != true) await Task.Delay(100);
+                if (View?.IsCompletelyVisibleOnScreen() != true) await Task.Delay(100).ConfigureAwait(false);
                 else
                 {
                     if (View?.IsReady == true)
