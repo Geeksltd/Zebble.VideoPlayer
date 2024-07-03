@@ -76,6 +76,8 @@ namespace Zebble
             Result.MediaEnded -= MediaEnded;
             Result.MediaOpened -= MediaOpened;
             Result = null;
+			
+			GC.SuppressFinalize(this);
         }
     }
 }

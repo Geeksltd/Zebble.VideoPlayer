@@ -1,5 +1,6 @@
 namespace Zebble
 {
+    using System;
     using System.Threading.Tasks;
     using Windows.UI.Xaml;
 
@@ -17,6 +18,8 @@ namespace Zebble
         {
             Result?.Dispose();
             Result = null;
+			
+			GC.SuppressFinalize(this);
         }
     }
 }
