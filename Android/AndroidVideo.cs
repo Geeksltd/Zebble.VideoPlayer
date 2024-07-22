@@ -50,14 +50,13 @@ namespace Zebble
         void Play()
         {
             if (IsDead(out var view)) return;
+            if (view.AutoPlay) return;
 
             try
             {
                 LastPosition = default;
 
                 SetPath();
-
-                if (view.AutoPlay) return;
 
                 Audio.RequestFocus(AudioFocus.GainTransientMayDuck);
                 Start();
@@ -104,7 +103,6 @@ namespace Zebble
 
                 mp.Looping = view.Loop;
                 view.IsReady = true;
-                view.LoadCompleted.Raise();
                 view.OnLoaded();
 
                 try { view.Duration = mp.Duration.Milliseconds(); }
@@ -122,6 +120,8 @@ namespace Zebble
                     try { mp.Start(); }
                     catch { }
                 }
+
+                view.LoadCompleted.Raise();
             }
             catch (Exception ex) { Log.For(this).Error(ex); }
         }
