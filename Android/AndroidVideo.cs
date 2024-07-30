@@ -50,13 +50,13 @@ namespace Zebble
         void Play()
         {
             if (IsDead(out var view)) return;
-            if (view.AutoPlay) return;
 
             try
             {
                 LastPosition = default;
 
                 SetPath();
+                if (view.AutoPlay) return;
 
                 Audio.RequestFocus(AudioFocus.GainTransientMayDuck);
                 Start();
