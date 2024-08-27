@@ -120,8 +120,6 @@ namespace Zebble
                     try { mp.Start(); }
                     catch { }
                 }
-
-                view.LoadCompleted.Raise();
             }
             catch (Exception ex) { Log.For(this).Error(ex); }
         }
