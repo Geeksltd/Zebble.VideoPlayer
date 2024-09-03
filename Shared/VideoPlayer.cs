@@ -7,9 +7,10 @@ namespace Zebble
 {
     public partial class VideoPlayer : View, IRenderedBy<VideoPlayerRenderer>
     {
-        string path; bool isMute;
+        string path, originalPath; bool isMute;
         internal string LoadedPath { get; set; }
         internal readonly AsyncEvent PathChanged = new AsyncEvent();
+        internal readonly AsyncEvent PathNullified = new();
         internal readonly AsyncEvent Started = new AsyncEvent();
         internal readonly AsyncEvent Paused = new AsyncEvent();
         internal readonly AsyncEvent Resumed = new AsyncEvent();
@@ -28,6 +29,7 @@ namespace Zebble
         public Size VideoSize { get; set; } = new Size(0, 0);
         public TimeSpan? StartPosition { get; set; }
         public TimeSpan? EndPosition { get; set; }
+
         public string Path
         {
             get => path;
@@ -59,6 +61,22 @@ namespace Zebble
         public bool Loop { get; set; }
 
         public bool ShowControls { get; set; }
+
+        public VideoPlayer()
+        {
+            Zebble.Device.App.WentIntoBackground += OnBackgroundGone;
+            Zebble.Device.App.CameToForeground += OnForegroundGone;
+        }
+
+        void OnBackgroundGone()
+        {
+            Stop();
+            originalPath = path;
+            path = null;
+            PathNullified?.Raise();
+        }
+
+        void OnForegroundGone() => Path = originalPath;
 
         public void Start() => Started.Raise();
 
@@ -124,6 +142,9 @@ namespace Zebble
                 timer.Elapsed -= OnRaiseCurrentTime;
                 timer.Dispose();
             }
+
+            Zebble.Device.App.WentIntoBackground -= OnBackgroundGone;
+            Zebble.Device.App.CameToForeground -= OnForegroundGone;
 
             PathChanged?.Dispose();
             base.Dispose();

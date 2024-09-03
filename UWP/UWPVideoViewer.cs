@@ -15,6 +15,7 @@ namespace Zebble
         {
             View = view;
             View.PathChanged.HandleOn(Thread.UI, Load);
+            View.PathNullified.HandleOn(Thread.UI, OnPathNullified);
             View.Started.HandleOn(Thread.UI, () => Result?.Play());
             View.Paused.HandleOn(Thread.UI, () => Result?.Pause());
             View.Resumed.HandleOn(Thread.UI, () => Result?.Play());
@@ -27,12 +28,14 @@ namespace Zebble
 
             Result = new controls.MediaElement { Stretch = view.BackgroundImageStretch.Render(), AutoPlay = View.AutoPlay, IsLooping = View.Loop };
             Result.MediaEnded += MediaEnded;
-            Result.MediaOpened += MediaOpened;            
+            Result.MediaOpened += MediaOpened;
 
             Load();
         }
 
         void MediaEnded(object sender, Windows.UI.Xaml.RoutedEventArgs e) => View.FinishedPlaying.RaiseOn(Thread.Pool);
+
+        void OnPathNullified() => Result.Source = null;
 
         void Load()
         {
