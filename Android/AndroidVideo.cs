@@ -7,6 +7,7 @@ namespace Zebble
     using Android.Widget;
     using Olive;
     using Zebble.Device;
+    using static Android.Graphics.ImageDecoder;
 
     class AndroidVideo : VideoView, MediaPlayer.IOnPreparedListener, MediaPlayer.IOnErrorListener
     {
@@ -32,6 +33,7 @@ namespace Zebble
 
             view.BufferRequested.HandleOn(Thread.UI, () => SafeInvoke(() => Player?.PrepareAsync()));
             view.PathChanged.HandleOn(Thread.UI, () => SafeInvoke(() => SetPath()));
+            view.PathNullified.HandleOn(Thread.UI, () => SafeInvoke(() => OnPathNullified()));
             view.Started.HandleOn(Thread.UI, Play);
             view.Paused.HandleOn(Thread.UI, OnPause);
             view.Resumed.HandleOn(Thread.UI, OnResume);
@@ -146,6 +148,8 @@ namespace Zebble
 
             view.LoadCompleted.RaiseOn(Thread.Pool);
         }
+
+        void OnPathNullified() => SetVideoURI(null);
 
         void SetPath()
         {
@@ -273,6 +277,7 @@ namespace Zebble
                     vp.Completion -= OnCompletion;
                     vp.Error -= OnErrorOccurred;
                     vp.VideoSizeChanged -= OnVideoSizeChanged;
+                    OnPathNullified();
                     vp.Release();
                     vp.Dispose();
 

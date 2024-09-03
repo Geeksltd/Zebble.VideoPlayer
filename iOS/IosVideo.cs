@@ -30,6 +30,7 @@ namespace Zebble
             view.Height.Changed.HandleOn(Thread.UI, OnFrameChanged);
             view.BufferRequested.HandleOn(Thread.UI, BufferVideo);
             view.PathChanged.HandleOn(Thread.UI, () => { CoreDispose(); LoadVideo(); });
+            view.PathNullified.HandleOn(Thread.UI, OnPathNullified);
             view.Started.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Play));
             view.Paused.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Pause));
             view.Resumed.HandleOn(Thread.UI, () => Prepared?.Raise(VideoState.Resume));
@@ -116,6 +117,12 @@ namespace Zebble
 
             Player?.Pause();
             SeekBeginning();
+        }
+
+        void OnPathNullified()
+        {
+            Asset?.Dispose();
+            Asset = null;
         }
 
         void LoadVideo()
@@ -269,8 +276,7 @@ namespace Zebble
             StatusObservation?.Dispose();
             StatusObservation = null;
 
-            Asset?.Dispose();
-            Asset = null;
+            OnPathNullified();
 
             PlayerItem?.Dispose();
             PlayerItem = null;
