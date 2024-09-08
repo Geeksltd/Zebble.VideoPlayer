@@ -100,7 +100,7 @@ namespace Zebble
             {
                 if (IsDisposed) return TimeSpan.Zero;
                 if (GetCurrentTime is null) return TimeSpan.Zero;
-                return GetCurrentTime();
+                return GetCurrentTime() ?? TimeSpan.Zero;
             }
         }
 
@@ -122,7 +122,7 @@ namespace Zebble
                 Thread.UI.Run(() =>
                 {
                     if (mayNeedRestart && CurrentTime >= EndPosition)
-                        Seek(StartPosition.Value); 
+                        Seek(StartPosition.Value);
 
                     TimeChanged.Raise(CurrentTime);
                 });
