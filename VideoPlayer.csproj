@@ -1,12 +1,12 @@
 ﻿<Project Sdk="MSBuild.Sdk.Extras/3.0.44">
   <PropertyGroup>
     <TargetFrameworks>net8.0-android;net8.0-ios</TargetFrameworks>
-    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);uap10.0.18362</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);net8.0-windows10.0.19041.0</TargetFrameworks>
     <AssemblyName>Zebble.VideoPlayer</AssemblyName>
     <RootNamespace>Zebble</RootNamespace>
     <PackageId>Zebble.VideoPlayer</PackageId>
     <Product>$(AssemblyName) ($(TargetFramework))</Product>
-    <Version>5.0.19.0</Version>
+    <Version>5.1.0.0</Version>
     <PackOnBuild>true</PackOnBuild>
     <NeutralLanguage>en</NeutralLanguage>
     <DefineConstants>$(DefineConstants)</DefineConstants>
@@ -37,8 +37,9 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
-  <PropertyGroup Condition=" $(TargetFramework.StartsWith('uap10.0')) ">
-    <DefineConstants>$(DefineConstants);UWP</DefineConstants>
+  <PropertyGroup Condition=" $(TargetFramework.Contains('windows')) ">
+	<RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+    <DefineConstants>$(DefineConstants);WINUI</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" $(TargetFramework.Contains('android')) ">
     <DefineConstants>$(DefineConstants);ANDROID</DefineConstants>
@@ -50,8 +51,8 @@
   <ItemGroup>
     <Compile Include="Shared\**\*.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" $(DefineConstants.Contains('UWP')) ">
-    <Compile Include="UWP\**\*.cs" />
+  <ItemGroup Condition=" $(DefineConstants.Contains('WINUI')) ">
+    <Compile Include="WinUI\**\*.cs" />
   </ItemGroup>
   <ItemGroup Condition=" $(DefineConstants.Contains('ANDROID')) ">
     <Compile Include="Android\**\*.cs" />
@@ -67,7 +68,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
-    <PackageReference Include="Zebble" Version="5.0.36" />
+    <PackageReference Include="Zebble" Version="5.0.63" />
     <PackageReference Include="Zebble.Audio" Version="3.0.10" />
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
