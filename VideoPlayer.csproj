@@ -68,10 +68,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
-    <PackageReference Include="Zebble" Version="5.1.0" />
-    <PackageReference Include="Zebble.Audio" Version="3.1.0" />
+    <PackageReference Include="Zebble" Version="5.1.2" />
+    <PackageReference Include="Zebble.Audio" Version="3.1.1" />
   </ItemGroup>
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Running)'=='local'">
     <Exec Command="update-local-nuget-cache" />
   </Target>
 </Project>
