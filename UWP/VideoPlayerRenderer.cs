@@ -2,15 +2,15 @@ namespace Zebble
 {
     using System;
     using System.Threading.Tasks;
-    using Microsoft.UI.Xaml;
+    using Windows.UI.Xaml;
 
     class VideoPlayerRenderer : INativeRenderer
     {
-        WinUIVideoViewer Result;
+        UWPVideoViewer Result;
 
         public Task<FrameworkElement> Render(Renderer renderer)
         {
-            Result = new WinUIVideoViewer((VideoPlayer)renderer.View);
+            Result = new UWPVideoViewer((VideoPlayer)renderer.View);
             return Task.FromResult((FrameworkElement)Result.Result);
         }
 

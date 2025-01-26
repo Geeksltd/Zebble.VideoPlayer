@@ -1,12 +1,12 @@
 ﻿<Project Sdk="MSBuild.Sdk.Extras/3.0.44">
   <PropertyGroup>
-    <TargetFrameworks>net8.0-android;net8.0-ios</TargetFrameworks>
-    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);net8.0-windows10.0.19041</TargetFrameworks>
+    <TargetFrameworks>net9.0-android;net9.0-ios</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);net9.0-windows10.0.26100</TargetFrameworks>
     <AssemblyName>Zebble.VideoPlayer</AssemblyName>
     <RootNamespace>Zebble</RootNamespace>
     <PackageId>Zebble.VideoPlayer</PackageId>
     <Product>$(AssemblyName) ($(TargetFramework))</Product>
-    <Version>5.1.0.0</Version>
+    <Version>5.1.1.0</Version>
     <PackOnBuild>true</PackOnBuild>
     <NeutralLanguage>en</NeutralLanguage>
     <DefineConstants>$(DefineConstants)</DefineConstants>
@@ -37,9 +37,10 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
-  <PropertyGroup Condition=" $(TargetFramework.Contains('windows')) ">
+  <PropertyGroup Condition=" $(TargetFramework.StartsWith('net9.0-windows')) ">
 	<RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
-    <DefineConstants>$(DefineConstants);WINUI</DefineConstants>
+	<DefineConstants>$(DefineConstants);UWP</DefineConstants>
+	<UseUwp>true</UseUwp>
   </PropertyGroup>
   <PropertyGroup Condition=" $(TargetFramework.Contains('android')) ">
     <DefineConstants>$(DefineConstants);ANDROID</DefineConstants>
@@ -51,8 +52,10 @@
   <ItemGroup>
     <Compile Include="Shared\**\*.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" $(DefineConstants.Contains('WINUI')) ">
-    <Compile Include="WinUI\**\*.cs" />
+  <ItemGroup Condition=" $(DefineConstants.Contains('UWP')) ">
+    <Compile Include="UWP\**\*.cs" />
+	<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.250108002" IncludeAssets="build" PrivateAssets="all" />
+	<PackageReference Include="Microsoft.Windows.CsWinRT" Version="2.2.0" />
   </ItemGroup>
   <ItemGroup Condition=" $(DefineConstants.Contains('ANDROID')) ">
     <Compile Include="Android\**\*.cs" />
@@ -67,9 +70,9 @@
     <None Remove="Zebble-LicenseAgreement.txt" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
-    <PackageReference Include="Zebble" Version="5.1.2" />
-    <PackageReference Include="Zebble.Audio" Version="3.1.1" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.1" />
+    <PackageReference Include="Zebble" Version="5.1.7" />
+    <PackageReference Include="Zebble.Audio" Version="3.1.2" />
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Running)'=='local'">
     <Exec Command="update-local-nuget-cache" />
