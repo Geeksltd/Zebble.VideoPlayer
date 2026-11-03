@@ -4,6 +4,9 @@ on:
     branches: [ master ]
 jobs:
  build:
+    permissions:
+      contents: write
+      id-token: write
     strategy:
       matrix:
         configuration: [ Release ]
@@ -20,6 +23,12 @@ jobs:
 
     - name: Install Zebble's CLI tools
       run: dotnet tool install --global zebble-build
-      
+
+    - name: Authenticate to NuGet using trusted publishing
+      uses: NuGet/login@v1
+      id: nuget-login-1
+      with:
+        user: ${{ vars.NUGET_USER }}
+
     - name: Publish a new Zebble.VideoPlayer package
-      run: zebble-build update-plugin --api-key ${{secrets.NUGET_API_KEY}} --publish
+      run: zebble-build update-plugin --api-key ${{ steps.nuget-login-1.outputs.NUGET_API_KEY }} --publish
